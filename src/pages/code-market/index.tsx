@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { THEME } from "@/config/app.config";
+import backArrowIcon from "@/assets/svg/svg/custom/back-arrow.svg?url";
 
 const items = [
   { id: 1, type: "认证码", name: "认证码x5", seller: "P客888", price: 2500, asset: "CV", qty: 5 },
@@ -24,7 +25,7 @@ export default function CodeMarketPage() {
   return (
     <div className="min-h-screen" style={{ background: THEME.bg }}>
       <div className="bg-white px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate("/")} className="p-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <button onClick={() => navigate("/")} className="p-1"><img src={backArrowIcon} alt="" width={20} height={20} /></button>
         <h1 className="text-base font-semibold flex-1">BV互换</h1>
       </div>
       <div className="mx-4 mt-3"><div className="p-3 rounded-xl flex items-center gap-2" style={{ background: "#F0FDF4" }}>

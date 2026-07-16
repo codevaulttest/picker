@@ -7,6 +7,7 @@ import { exchangeAuthCode, exchangeUpgradeCode } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { AUTH_CODE_CONFIG, THEME, getLevel } from "@/config/app.config";
+import backArrowIcon from "@/assets/svg/svg/custom/back-arrow.svg?url";
 
 const costs: Record<number, number> = { 2: 500, 3: 2500, 4: 10000, 5: 45000, 6: 65000, 7: 115000, 8: 215000, 9: 415000, 10: 815000, 11: 1615000, 12: 3215000 };
 
@@ -32,7 +33,7 @@ export default function BVExchangePage() {
   return (
     <div className="min-h-screen" style={{ background: THEME.bg }}>
       <div className="bg-white px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate("/donor")} className="p-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <button onClick={() => navigate("/donor")} className="p-1"><img src={backArrowIcon} alt="" width={20} height={20} /></button>
         <h1 className="text-base font-semibold flex-1">BV兑换专区</h1>
       </div>
       <div className="flex mx-4 mt-3 bg-white rounded-xl p-1">

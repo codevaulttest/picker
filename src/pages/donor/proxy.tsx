@@ -8,6 +8,7 @@ import { proxyDonate } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { THEME } from "@/config/app.config";
+import backArrowIcon from "@/assets/svg/svg/custom/back-arrow.svg?url";
 
 export default function ProxyDonatePage() {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export default function ProxyDonatePage() {
   return (
     <div className="min-h-screen" style={{ background: THEME.bg }}>
       <div className="bg-white px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate("/donor")} className="p-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <button onClick={() => navigate("/donor")} className="p-1"><img src={backArrowIcon} alt="" width={20} height={20} /></button>
         <h1 className="text-base font-semibold flex-1">代他人打赏</h1>
       </div>
       <div className="px-4 mt-4">

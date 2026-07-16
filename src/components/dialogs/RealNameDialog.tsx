@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { THEME } from "@/config/app.config";
+import idCardFrontIcon from "@/assets/svg/svg/custom/id-card-front.svg?url";
+import idCardBackIcon from "@/assets/svg/svg/custom/id-card-back.svg?url";
+import faceScanIcon from "@/assets/svg/svg/custom/face-scan.svg?url";
+import checkSuccessIcon from "@/assets/svg/svg/custom/check-success.svg?url";
 
 interface Props {
   open: boolean;
@@ -151,7 +155,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
                 <button onClick={() => frontInputRef.current?.click()}
                   className="flex-1 h-28 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1 hover:border-blue-300 transition-colors overflow-hidden relative">
                   {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
+                    <img src={idCardFrontIcon} alt="" width={24} height={24} />
                     <span className="text-[10px] text-slate-400">身份证正面</span>
                   </>}
                   <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
@@ -159,7 +163,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
                 <button onClick={() => backInputRef.current?.click()}
                   className="flex-1 h-28 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1 hover:border-blue-300 transition-colors overflow-hidden relative">
                   {backImg ? <img src={backImg} className="w-full h-full object-cover" alt="back" /> : <>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15h18" /><path d="M8 3v18" /></svg>
+                    <img src={idCardBackIcon} alt="" width={24} height={24} />
                     <span className="text-[10px] text-slate-400">身份证反面</span>
                   </>}
                   <input ref={backInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "back")} />
@@ -179,9 +183,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
                 {streamActive ? (
                   <video ref={videoRef} className="w-full h-full object-cover" playsInline muted autoPlay />
                 ) : (
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                    <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
-                  </svg>
+                  <img src={faceScanIcon} alt="" width={48} height={48} />
                 )}
                 {/* 扫描线动画 */}
                 {streamActive && <div className="absolute inset-x-0 h-0.5 bg-green-400 animate-scan" style={{ animation: "scan 2s linear infinite" }} />}
@@ -215,7 +217,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
           {step === "done" && (
             <div className="text-center py-4">
               <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                <img src={checkSuccessIcon} alt="" width={40} height={40} />
               </div>
               <p className="text-lg font-semibold text-green-600">实名认证成功</p>
               <p className="text-sm text-slate-500 mt-1">您现在可以正常签到了</p>

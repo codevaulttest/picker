@@ -1,0 +1,484 @@
+[
+  {
+    "name": "arrow-up",
+    "file": "svg/lucide/arrow-up.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/home/index.tsx"
+    ]
+  },
+  {
+    "name": "badge-check",
+    "file": "svg/lucide/badge-check.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/layout/PageHeader.tsx"
+    ]
+  },
+  {
+    "name": "calendar-check",
+    "file": "svg/lucide/calendar-check.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/home/index.tsx"
+    ]
+  },
+  {
+    "name": "camera",
+    "file": "svg/lucide/camera.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/dialogs/EditProfileDialog.tsx"
+    ]
+  },
+  {
+    "name": "check",
+    "file": "svg/lucide/check.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/dialogs/SwitchAccountSheet.tsx",
+      "src/pages/home/index.tsx"
+    ]
+  },
+  {
+    "name": "chevron-left",
+    "file": "svg/lucide/chevron-left.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskCategoryPage.tsx",
+      "src/modules/task/TaskHomePage.tsx",
+      "src/modules/task/TaskOrderPage.tsx",
+      "src/modules/task/TaskProfilePage.tsx",
+      "src/pages/account-login/index.tsx",
+      "src/pages/security/more.tsx",
+      "src/pages/support/index.tsx",
+      "src/pages/wealth/index.tsx"
+    ]
+  },
+  {
+    "name": "chevron-right",
+    "file": "svg/lucide/chevron-right.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/layout/PageHeader.tsx",
+      "src/modules/task/TaskCategoryPage.tsx",
+      "src/modules/task/TaskHomePage.tsx",
+      "src/modules/task/TaskProfilePage.tsx",
+      "src/pages/home/index.tsx",
+      "src/pages/security/more.tsx",
+      "src/pages/task/index.tsx"
+    ]
+  },
+  {
+    "name": "clipboard-list",
+    "file": "svg/lucide/clipboard-list.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskLayout.tsx"
+    ]
+  },
+  {
+    "name": "clock",
+    "file": "svg/lucide/clock.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskOrderPage.tsx"
+    ]
+  },
+  {
+    "name": "copy",
+    "file": "svg/lucide/copy.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/layout/PageHeader.tsx",
+      "src/pages/auth-code/index.tsx",
+      "src/pages/upgrade-code/index.tsx"
+    ]
+  },
+  {
+    "name": "eye-off",
+    "file": "svg/lucide/eye-off.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/auth-code/index.tsx",
+      "src/pages/upgrade-code/index.tsx"
+    ]
+  },
+  {
+    "name": "eye",
+    "file": "svg/lucide/eye.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/auth-code/index.tsx",
+      "src/pages/upgrade-code/index.tsx"
+    ]
+  },
+  {
+    "name": "flame",
+    "file": "svg/lucide/flame.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskHomePage.tsx"
+    ]
+  },
+  {
+    "name": "hand-coins",
+    "file": "svg/lucide/hand-coins.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/donor/records.tsx"
+    ]
+  },
+  {
+    "name": "heart",
+    "file": "svg/lucide/heart.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskProfilePage.tsx"
+    ]
+  },
+  {
+    "name": "help-circle",
+    "file": "svg/lucide/help-circle.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskProfilePage.tsx",
+      "src/pages/task/index.tsx"
+    ]
+  },
+  {
+    "name": "home",
+    "file": "svg/lucide/home.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskLayout.tsx"
+    ]
+  },
+  {
+    "name": "image-plus",
+    "file": "svg/lucide/image-plus.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/support/index.tsx"
+    ]
+  },
+  {
+    "name": "info",
+    "file": "svg/lucide/info.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/home/index.tsx",
+      "src/pages/task/index.tsx"
+    ]
+  },
+  {
+    "name": "layout-grid",
+    "file": "svg/lucide/layout-grid.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskLayout.tsx"
+    ]
+  },
+  {
+    "name": "line-chart",
+    "file": "svg/lucide/line-chart.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/home/index.tsx"
+    ]
+  },
+  {
+    "name": "log-out",
+    "file": "svg/lucide/log-out.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskProfilePage.tsx"
+    ]
+  },
+  {
+    "name": "mail",
+    "file": "svg/lucide/mail.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/dialogs/EmailBindDialog.tsx"
+    ]
+  },
+  {
+    "name": "map-pin",
+    "file": "svg/lucide/map-pin.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskHomePage.tsx",
+      "src/modules/task/TaskOrderPage.tsx",
+      "src/modules/task/TaskProfilePage.tsx"
+    ]
+  },
+  {
+    "name": "message-circle",
+    "file": "svg/lucide/message-circle.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskOrderPage.tsx",
+      "src/modules/task/TaskProfilePage.tsx"
+    ]
+  },
+  {
+    "name": "phone",
+    "file": "svg/lucide/phone.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskOrderPage.tsx"
+    ]
+  },
+  {
+    "name": "planet-lab",
+    "file": "svg/lucide/planet-lab.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/icons/Planet.tsx"
+    ]
+  },
+  {
+    "name": "plus",
+    "file": "svg/lucide/plus.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/dialogs/SwitchAccountSheet.tsx"
+    ]
+  },
+  {
+    "name": "scan-line",
+    "file": "svg/lucide/scan-line.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/home/index.tsx"
+    ]
+  },
+  {
+    "name": "search",
+    "file": "svg/lucide/search.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskHomePage.tsx",
+      "src/pages/donor/proxy.tsx",
+      "src/pages/task/index.tsx"
+    ]
+  },
+  {
+    "name": "settings",
+    "file": "svg/lucide/settings.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskProfilePage.tsx"
+    ]
+  },
+  {
+    "name": "share-2",
+    "file": "svg/lucide/share-2.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/auth-code/index.tsx",
+      "src/pages/upgrade-code/index.tsx"
+    ]
+  },
+  {
+    "name": "shield",
+    "file": "svg/lucide/shield.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskProfilePage.tsx"
+    ]
+  },
+  {
+    "name": "sparkles",
+    "file": "svg/lucide/sparkles.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskHomePage.tsx"
+    ]
+  },
+  {
+    "name": "star",
+    "file": "svg/lucide/star.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskCategoryPage.tsx",
+      "src/modules/task/TaskHomePage.tsx",
+      "src/modules/task/TaskOrderPage.tsx"
+    ]
+  },
+  {
+    "name": "ticket",
+    "file": "svg/lucide/ticket.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskProfilePage.tsx"
+    ]
+  },
+  {
+    "name": "trash-2",
+    "file": "svg/lucide/trash-2.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/components/dialogs/SwitchAccountSheet.tsx"
+    ]
+  },
+  {
+    "name": "trending-up",
+    "file": "svg/lucide/trending-up.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/code-market/index.tsx"
+    ]
+  },
+  {
+    "name": "user-x",
+    "file": "svg/lucide/user-x.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/security/more.tsx"
+    ]
+  },
+  {
+    "name": "user",
+    "file": "svg/lucide/user.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskLayout.tsx"
+    ]
+  },
+  {
+    "name": "users",
+    "file": "svg/lucide/users.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/pages/donor/proxy.tsx",
+      "src/pages/donor/records.tsx"
+    ]
+  },
+  {
+    "name": "wallet",
+    "file": "svg/lucide/wallet.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskProfilePage.tsx",
+      "src/pages/home/index.tsx"
+    ]
+  },
+  {
+    "name": "x",
+    "file": "svg/lucide/x.svg",
+    "source": "lucide",
+    "usedIn": [
+      "src/modules/task/TaskCategoryPage.tsx",
+      "src/modules/task/TaskHomePage.tsx",
+      "src/modules/task/TaskOrderPage.tsx",
+      "src/modules/task/TaskProfilePage.tsx",
+      "src/pages/support/index.tsx"
+    ]
+  },
+  {
+    "name": "back-arrow",
+    "file": "svg/custom/back-arrow.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/pages/cas/index.tsx",
+      "src/pages/upgrade-code/index.tsx",
+      "src/pages/donor/records.tsx",
+      "src/pages/donor/proxy.tsx",
+      "src/pages/donor/exchange.tsx",
+      "src/pages/code-market/index.tsx",
+      "src/pages/clock-in/step.tsx",
+      "src/pages/clock-in/early.tsx",
+      "src/pages/auth-code/index.tsx"
+    ]
+  },
+  {
+    "name": "check-success",
+    "file": "svg/custom/check-success.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/dialogs/RealNameDialog.tsx"
+    ]
+  },
+  {
+    "name": "chevron-right-thin",
+    "file": "svg/custom/chevron-right-thin.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/pages/cas/index.tsx"
+    ]
+  },
+  {
+    "name": "clipboard-check-filled",
+    "file": "svg/custom/clipboard-check-filled.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/icons/ClipboardCheckFilled.tsx"
+    ]
+  },
+  {
+    "name": "donor-mark",
+    "file": "svg/custom/donor-mark.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/icons/DonorMark.tsx"
+    ]
+  },
+  {
+    "name": "face-scan",
+    "file": "svg/custom/face-scan.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/dialogs/RealNameDialog.tsx"
+    ]
+  },
+  {
+    "name": "home-mark",
+    "file": "svg/custom/home-mark.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/icons/HomeMark.tsx (源码仍是可参数化组件，此文件为默认态快照)"
+    ]
+  },
+  {
+    "name": "id-card-back",
+    "file": "svg/custom/id-card-back.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/dialogs/RealNameDialog.tsx"
+    ]
+  },
+  {
+    "name": "id-card-front",
+    "file": "svg/custom/id-card-front.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/dialogs/RealNameDialog.tsx"
+    ]
+  },
+  {
+    "name": "profile-mark-filled",
+    "file": "svg/custom/profile-mark-filled.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/icons/ProfileMark.tsx (激活态快照)"
+    ]
+  },
+  {
+    "name": "profile-mark-outline",
+    "file": "svg/custom/profile-mark-outline.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/components/icons/ProfileMark.tsx (未激活态快照)"
+    ]
+  },
+  {
+    "name": "favicon",
+    "file": "svg/favicon.svg",
+    "source": "custom",
+    "usedIn": [
+      "app/public/favicon.svg (归档拷贝，index.html 仍引用 public/ 内原文件)"
+    ]
+  }
+]

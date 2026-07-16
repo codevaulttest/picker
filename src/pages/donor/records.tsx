@@ -6,6 +6,7 @@ import { getDonateOrders, getProxyOrders } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { THEME, TEXT, getLevel } from "@/config/app.config";
 import { useState } from "react";
+import backArrowIcon from "@/assets/svg/svg/custom/back-arrow.svg?url";
 
 export default function DonateRecordsPage() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function DonateRecordsPage() {
   return (
     <div className="min-h-screen" style={{ background: THEME.bg }}>
       <div className="bg-white px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate("/donor")} className="p-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <button onClick={() => navigate("/donor")} className="p-1"><img src={backArrowIcon} alt="" width={20} height={20} /></button>
         <h1 className="text-base font-semibold flex-1">{tab === "donate" ? TEXT.donor.donateRecords : TEXT.donor.proxyRecords}</h1>
       </div>
       <div className="flex mx-4 mt-3 bg-white rounded-xl p-1">
