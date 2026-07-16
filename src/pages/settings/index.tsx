@@ -37,7 +37,7 @@ export default function SettingsPage() {
       icon: Shield,
       color: GAME.infoBlue,
       bg: isDark ? GAME.infoSoftDark : GAME.infoSoft,
-      action: () => navigate("/security"),
+      action: () => navigate(user ? "/security" : "/login"),
     },
     {
       key: "support",

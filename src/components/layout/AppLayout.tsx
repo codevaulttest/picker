@@ -68,11 +68,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [location.pathname, setActiveTab]);
 
   const isTaskRoute = location.pathname.startsWith("/task");
+  const isLoginRoute = location.pathname.startsWith("/login");
   const isHome = location.pathname === "/";
   const isProfile = location.pathname === "/settings" || location.pathname.startsWith("/settings/");
   const isSecurity = location.pathname.startsWith("/security");
   const isDonor = location.pathname.startsWith("/donor");
   const useWarmGradient = isHome || isProfile || isSecurity || isDonor;
+  const hideNav = isTaskRoute || isLoginRoute;
 
   // DESIGN.md: light card @ 95%；dark → bg-card-dark（暖炭，禁止 cool slate）
   const navBg = isDark ? "rgba(36, 31, 26, 0.95)" : "rgba(255, 255, 255, 0.95)";
@@ -90,12 +92,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             : undefined
       }
     >
-      <main className="flex-1 overflow-y-auto scrollbar-hide" style={{ paddingBottom: isTaskRoute ? 0 : NAV_H }}>
+      <main className="flex-1 overflow-y-auto scrollbar-hide" style={{ paddingBottom: hideNav ? 0 : NAV_H }}>
         {children}
       </main>
 
-      {/* 任务模块有自己的导航，这里隐藏主导航 */}
-      {!isTaskRoute && (
+      {/* 任务模块有自己的导航；登录页是专注流程，也隐藏主导航 */}
+      {!hideNav && (
         <nav
           className="absolute bottom-0 left-0 right-0 z-50 overflow-visible"
           style={{ height: NAV_H }}

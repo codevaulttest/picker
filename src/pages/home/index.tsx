@@ -231,6 +231,21 @@ export default function HomePage() {
       {/* 近7日BV收益 */}
       <section className="mx-3.5 mt-2.5 flex-shrink-0">
         <div className={`p-4 rounded-card transition-colors ${softCard}`}>
+          {!user ? (
+            <div className="h-[220px] flex flex-col items-center justify-center gap-2">
+              <LineChart size={28} className={inkDis} />
+              <span className={`text-caption ${inkTer}`}>登录后查看收益趋势</span>
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="mt-1 text-body font-medium"
+                style={{ color: GAME.primaryText }}
+              >
+                去登录
+              </button>
+            </div>
+          ) : (
+          <>
           <div className="flex items-center gap-1">
             <span className={`text-section-title ${ink}`}>近7日BV收益</span>
             <Info size={13} className={inkDis} />
@@ -332,6 +347,8 @@ export default function HomePage() {
               <LineChart size={28} className={inkDis} />
               <span className={`text-caption ${inkTer}`}>暂无收益数据</span>
             </div>
+          )}
+          </>
           )}
         </div>
       </section>
