@@ -39,3 +39,7 @@ build/
 # Test coverage
 coverage/
 .nyc_output/
+# Firebase
+.firebase/
+.firebaserc
+firebase.json
