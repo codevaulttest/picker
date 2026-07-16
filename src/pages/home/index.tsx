@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
-import { Info, ArrowUp, Wallet, ChevronRight, Check, LineChart, CalendarCheck, ScanLine } from "lucide-react";
+import { Info, Wallet, ChevronRight, Check, LineChart, CalendarCheck, ScanLine, MoreHorizontal, ChevronDown, Image } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getUserProfile, registerUser } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
-import { GAME, HOME_FEATURES, BRAND, getLevel } from "@/config/app.config";
+import { GAME, HOME_FEATURES, BRAND, getLevel, MINI_PROGRAMS } from "@/config/app.config";
 import { useI18n } from "@/hooks/useI18n";
 import SignInDialog from "@/components/dialogs/SignInDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
@@ -14,14 +14,10 @@ import RealNameDialog from "@/components/dialogs/RealNameDialog";
 // 连续签到奖励梯度：第N天 = N*10 BV
 const CHECK_IN_REWARDS = [10, 20, 30, 40, 50, 60, 70];
 
-/** HOME_FEATURES 亮色 soft → 暗色 soft-dark（DESIGN.md） */
-function featureSoftDark(color: string): string {
-  if (color === GAME.infoBlue) return GAME.infoSoftDark;
-  if (color === GAME.primary) return GAME.primarySoftDark;
-  if (color === GAME.rewardGold) return GAME.rewardGoldSoftDark;
-  if (color === GAME.success) return GAME.successSoftDark;
-  return GAME.bgMutedDark;
-}
+// 下拉唤出小程序面板：拖拽阻尼系数 / 展开高度 / 开合阈值
+const PULL_RESISTANCE = 0.55;
+const PULL_MAX = 200;
+const PULL_THRESHOLD = 64;
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -36,6 +32,66 @@ export default function HomePage() {
   const [showRealName, setShowRealName] = useState(false);
   const [pbIncome, setPbIncome] = useState<{ date: string; amount: number }[]>([]);
   const pkeId = localStorage.getItem("pke_user_id");
+
+  // 仿微信「下拉唤出小程序」：贴顶下拉时面板随手势展开，越过阈值松手即定住展开态
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [miniProgramOpen, setMiniProgramOpen] = useState(false);
+  const dragRef = useRef<{ dragging: boolean; startY: number; base: number; moved: boolean; pointerId: number }>({
+    dragging: false,
+    startY: 0,
+    base: 0,
+    moved: false,
+    pointerId: -1,
+  });
+  // 拖拽松手后浏览器仍会在抬起位置补发一次 click；用它抑制“点击面板外关闭”误触发
+  const suppressClickRef = useRef(false);
+
+  useEffect(() => {
+    const scrollEl = containerRef.current?.closest("main");
+    if (!scrollEl) return;
+    const onScroll = () => {
+      if (miniProgramOpen && scrollEl.scrollTop > 4) {
+        setMiniProgramOpen(false);
+        setPullDistance(0);
+      }
+    };
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    return () => scrollEl.removeEventListener("scroll", onScroll);
+  }, [miniProgramOpen]);
+
+  const handlePullPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    const scrollEl = containerRef.current?.closest("main");
+    if (!scrollEl || scrollEl.scrollTop > 0) return;
+    dragRef.current = { dragging: true, startY: e.clientY, base: pullDistance, moved: false, pointerId: e.pointerId };
+  };
+  const handlePullPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d.dragging || e.pointerId !== d.pointerId) return;
+    const delta = e.clientY - d.startY;
+    if (Math.abs(delta) > 8) d.moved = true;
+    const next = Math.max(0, Math.min(PULL_MAX, d.base + delta * PULL_RESISTANCE));
+    if (Math.abs(next - pullDistance) > 0.5) {
+      e.preventDefault();
+      setPullDistance(next);
+    }
+  };
+  const handlePullPointerUp = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d.dragging || e.pointerId !== d.pointerId) return;
+    d.dragging = false;
+    if (d.moved) suppressClickRef.current = true;
+    setPullDistance((cur) => {
+      const shouldOpen = cur >= PULL_THRESHOLD;
+      setMiniProgramOpen(shouldOpen);
+      return shouldOpen ? PULL_MAX : 0;
+    });
+  };
+  const closeMiniProgramPanel = () => {
+    setMiniProgramOpen(false);
+    setPullDistance(0);
+  };
 
   const guestName = t.home.guestName;
 
@@ -94,10 +150,80 @@ export default function HomePage() {
   const inkTer = isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary";
   const inkDis = isDark ? "text-game-ink-disabled-dark" : "text-game-ink-disabled";
 
+  const pullRatio = Math.min(1, pullDistance / PULL_THRESHOLD);
+
   return (
-    <div className="min-h-full flex flex-col transition-colors pt-3.5">
+    <div
+      ref={containerRef}
+      className="min-h-full flex flex-col transition-colors pt-3.5"
+      onPointerDown={handlePullPointerDown}
+      onPointerMove={handlePullPointerMove}
+      onPointerUp={handlePullPointerUp}
+      onPointerCancel={handlePullPointerUp}
+      onClick={(e) => {
+        if (suppressClickRef.current) {
+          suppressClickRef.current = false;
+          return;
+        }
+        if (miniProgramOpen && !(e.target as HTMLElement).closest("[data-pull-panel]")) closeMiniProgramPanel();
+      }}
+    >
       <SignInDialog open={showSignIn} onClose={() => setShowSignIn(false)} />
       <RealNameDialog open={showRealName} onComplete={() => { setShowRealName(false); if (user) setUser({ ...user, isRealName: true } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
+
+      {/* 下拉唤出小程序面板：贴顶下拉展开，越过阈值松手定住 */}
+      <div
+        className="mx-3.5 flex-shrink-0 overflow-hidden"
+        style={{
+          height: pullDistance,
+          transition: dragRef.current.dragging ? "none" : "height 0.28s cubic-bezier(0.22,1,0.36,1)",
+        }}
+      >
+        <div
+          data-pull-panel
+          className={`p-3.5 rounded-card transition-colors ${softCard}`}
+          style={{ height: PULL_MAX, opacity: pullDistance > 4 ? Math.min(1, pullDistance / 40) : 0 }}
+        >
+          <div className="flex items-center justify-between">
+            <span className={`text-caption ${inkTer}`}>
+              {miniProgramOpen ? "小程序" : pullRatio >= 1 ? "松开进入小程序" : "下拉查看小程序"}
+            </span>
+            <ChevronDown
+              size={14}
+              className={inkDis}
+              style={{ transform: `rotate(${miniProgramOpen || pullRatio >= 1 ? 180 : 0}deg)`, transition: "transform 0.2s" }}
+            />
+          </div>
+          <div className="grid grid-cols-4 gap-y-3 mt-2.5">
+            {MINI_PROGRAMS.slice(0, 7).map((app) => (
+              <button
+                key={app.key}
+                type="button"
+                onClick={() => {
+                  closeMiniProgramPanel();
+                  toast({ title: `(Demo)打开「${app.name}」`, variant: "info" });
+                }}
+                className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+              >
+                <div className={`w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0 ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
+                  <Image size={18} strokeWidth={1.75} className={inkTer} />
+                </div>
+                <span className={`text-caption ${inkSec} truncate w-full text-center`}>{app.name}</span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => { closeMiniProgramPanel(); navigate("/mini-program"); }}
+              className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+            >
+              <div className={`w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0 ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
+                <MoreHorizontal size={20} className={inkTer} />
+              </div>
+              <span className={`text-caption ${inkSec} truncate w-full text-center`}>更多</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Top HUD：左「我的」/ 右「扫一扫」 */}
       <div className="mx-3.5 h-[52px] flex items-center justify-between flex-shrink-0">
@@ -142,7 +268,7 @@ export default function HomePage() {
           }`}
           aria-label="扫一扫"
         >
-          <ScanLine size={20} className="text-game-primary" strokeWidth={2} />
+          <ScanLine size={20} className={ink} strokeWidth={2} />
         </button>
       </div>
 
@@ -256,12 +382,6 @@ export default function HomePage() {
             <span className="text-hero-number tabular-nums text-game-primary">+{totalGain.toLocaleString()}</span>
             <span className={`text-body ${inkSec}`}>BV</span>
           </div>
-          <div className="flex items-center gap-1 mt-1">
-            <span className={`text-caption ${inkTer}`}>较前7日</span>
-            <ArrowUp size={12} className="text-game-primary" />
-            <span className="text-caption font-bold tabular-nums text-game-primary">18.6%</span>
-          </div>
-
           {pbIncome.length > 0 && (
             <div className="h-[140px] mt-2 -ml-1">
               <ResponsiveContainer width="100%" height="100%">
@@ -356,25 +476,22 @@ export default function HomePage() {
       {/* 功能入口 - 6个大图 + 副标题（直接铺在页面背景，无 Soft card 包裹） */}
       <section className="mx-3.5 mt-2.5 flex-shrink-0">
         <div className="grid grid-cols-3">
-          {HOME_FEATURES.map((f) => {
-            const Icon = f.icon;
-            return (
-              <button
-                key={f.key}
-                onClick={() => navigate(f.path)}
-                className="flex flex-col items-center py-3 active:scale-95 transition-all"
-              >
-                <div
-                  className="w-14 h-14 rounded-tile flex items-center justify-center"
-                  style={{ backgroundColor: isDark ? featureSoftDark(f.color) : f.bg }}
-                >
-                  <Icon size={26} strokeWidth={2} color={f.color} />
-                </div>
-                <span className={`text-grid-label mt-2 ${ink}`}>{f.label}</span>
-                <span className={`text-body mt-1 ${inkSec}`}>{f.subtitle}</span>
-              </button>
-            );
-          })}
+          {HOME_FEATURES.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => {
+                if (f.key === "home-mini-program") { navigate(f.path); return; }
+                toast({ title: `(Demo)跳转「${f.label}」H5`, variant: "info" });
+              }}
+              className="flex flex-col items-center py-3 active:scale-95 transition-all"
+            >
+              <div className="w-14 h-14 flex items-center justify-center flex-shrink-0">
+                <img src={f.image} alt={f.label} className="w-full h-full object-contain" />
+              </div>
+              <span className={`text-grid-label mt-2 ${ink}`}>{f.label}</span>
+              <span className={`text-body mt-1 ${inkSec}`}>{f.subtitle}</span>
+            </button>
+          ))}
         </div>
       </section>
 

@@ -8,7 +8,7 @@ import {
   Home, CircleDot, Gift, HandCoins, KeyRound, ArrowUpDown,
   Star, Users, Smartphone,
   Mail, Fingerprint, Lock, CreditCard, UserCheck, Beef, TreePine,
-  Wine, Wallet, ShieldCheck, Rocket, Coins, Sunrise, Footprints, AppWindow,
+  Wine, Wallet, ShieldCheck, Coins,
   ClipboardList, Hourglass, Link2, Gem, type LucideIcon,
 } from "lucide-react";
 
@@ -217,21 +217,18 @@ export interface FeatureButtonConfig {
   key: string;
   label: string;
   subtitle: string;
-  icon: LucideIcon;
-  color: string;
-  bg: string;
+  /** 3D soft 图标（已含自身配色与卡片底），直接渲染，不再叠加色块底 */
+  image: string;
   path: string;
 }
 
-// 色相对应 DESIGN.md：品牌橙（成长）、奖励金（积分）、语义蓝（认证）、
-// success 绿（系统/生态入口，如小程序）。不再引入栅格取样色。
 export const HOME_FEATURES: FeatureButtonConfig[] = [
-  { key: "home-authcode", label: "认证码", subtitle: "认证得BV", icon: ShieldCheck, color: GAME.infoBlue, bg: GAME.infoSoft, path: "/auth-code" },
-  { key: "home-upgrade", label: "升级码", subtitle: "兑换升级经验", icon: Rocket, color: GAME.primary, bg: GAME.primarySoft, path: "/upgrade-code" },
-  { key: "home-exchange", label: "BV互换", subtitle: "BV兑换好礼", icon: Coins, color: GAME.rewardGold, bg: GAME.rewardGoldSoft, path: "/code-market" },
-  { key: "home-cas", label: "小程序", subtitle: "发现更多服务", icon: AppWindow, color: GAME.success, bg: GAME.successSoft, path: "/cas" },
-  { key: "home-early", label: "早起打卡", subtitle: "每日打卡得分", icon: Sunrise, color: GAME.primary, bg: GAME.primarySoft, path: "/clock-in/early" },
-  { key: "home-step", label: "计步打卡", subtitle: "走路赚BV", icon: Footprints, color: GAME.rewardGold, bg: GAME.rewardGoldSoft, path: "/clock-in/step" },
+  { key: "home-authcode", label: "认证码", subtitle: "认证得BV", image: "/icons/home-authcode.webp", path: "/auth-code" },
+  { key: "home-upgrade", label: "升级码", subtitle: "兑换升级经验", image: "/icons/home-upgrade.webp", path: "/upgrade-code" },
+  { key: "home-exchange", label: "BV互换", subtitle: "BV兑换好礼", image: "/icons/home-exchange.webp", path: "/code-market" },
+  { key: "home-mini-program", label: "小程序", subtitle: "发现更多服务", image: "/icons/home-mini-program.webp", path: "/mini-program" },
+  { key: "home-early", label: "早起打卡", subtitle: "每日打卡得分", image: "/icons/home-early.webp", path: "/clock-in/early" },
+  { key: "home-step", label: "计步打卡", subtitle: "走路赚BV", image: "/icons/home-step.webp", path: "/clock-in/step" },
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -390,9 +387,9 @@ export const CLOCK_IN_CONFIG = {
 } as const;
 
 // ═══════════════════════════════════════════════════════════
-// CAS应用配置
+// 小程序配置
 // ═══════════════════════════════════════════════════════════
-export interface CasAppConfig {
+export interface MiniProgramConfig {
   key: string;
   name: string;
   desc: string;
@@ -402,7 +399,7 @@ export interface CasAppConfig {
   comingSoon?: boolean;
 }
 
-export const CAS_APPS: CasAppConfig[] = [
+export const MINI_PROGRAMS: MiniProgramConfig[] = [
   { key: "cow", name: "东家养牛", desc: "养牛场互动", icon: Beef, iconColor: "#8B5CF6", iconBg: "#F5F3FF" },
   { key: "rosewood", name: "海黄黄花梨", desc: "黄花梨树场", icon: TreePine, iconColor: "#22C55E", iconBg: "#F0FDF4" },
   { key: "gift", name: "助农锦盒", desc: "助农产品", icon: Gift, iconColor: "#F97316", iconBg: "#FFF7ED" },
@@ -633,6 +630,6 @@ export const ROUTES = {
   clockInStep: "/clock-in/step",
   wealth: "/wealth",
   security: "/security",
-  cas: "/cas",
+  miniProgram: "/mini-program",
   codeMarket: "/code-market",
 } as const;

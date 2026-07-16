@@ -13,7 +13,7 @@ import StepCountPage from "@/pages/clock-in/step";
 import WealthPage from "@/pages/wealth";
 import SecurityPage from "@/pages/security";
 import SecurityMorePage from "@/pages/security/more";
-import CASPage from "@/pages/cas";
+import MiniProgramPage from "@/pages/mini-program";
 import CodeMarketPage from "@/pages/code-market";
 import SettingsPage from "@/pages/settings";
 import SettingsGeneralPage from "@/pages/settings/general";
@@ -40,7 +40,7 @@ export default function App() {
           <Route path="/wealth" element={<WealthPage />} />
           <Route path="/security" element={<SecurityPage />} />
           <Route path="/security/more" element={<SecurityMorePage />} />
-          <Route path="/cas" element={<CASPage />} />
+          <Route path="/mini-program" element={<MiniProgramPage />} />
           <Route path="/code-market" element={<CodeMarketPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/general" element={<SettingsGeneralPage />} />
