@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 人脸扫描线动画 */
+@keyframes scan {
+  0% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.animate-scan {
+  animation: scan 2s linear infinite;
+}
+
+@layer base {
+  :root {
+    /* Surface tokens mapped to DESIGN.md. Brand blue lives in
+       `colors.game` (primary fills) + `game.primary-text` (≡ primary，亮品牌蓝文案) —
+       kept out of shadcn `--primary` so un-reskinned UI kit screens
+       don't suddenly all go blue. Flip `--primary` to 216 94% 53%
+       when the kit itself is ready to adopt the brand hue. */
+    --background: 216 45% 98%; /* bg-page #F7F9FC */
+    --foreground: 222 18% 11%; /* ink #171A21 */
+    --card: 0 0% 100%; /* bg-card #FFFFFF */
+    --card-foreground: 222 18% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 18% 11%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 222 18% 11%;
+    --muted: 220 25% 96%; /* bg-muted #F2F4F8 */
+    --muted-foreground: 219 7% 47%; /* ink-secondary #707681 */
+    --accent: 217 100% 96%; /* primary-soft #EAF2FF */
+    --accent-foreground: 222 18% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 23% 92%; /* border-light #E7EAF0 */
+    --input: 220 23% 92%;
+    --ring: 216 94% 53%; /* brand blue focus ring */
+    --radius: 0.75rem; /* 12px — card/button on DESIGN 8/12/16/24 scale */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* DESIGN.md dark — cool charcoal, same brand-blue hue family as light
+       (not the pre-rebrand warm brown, not generic Tailwind cool slate). */
+    --background: 223 18% 8%; /* bg-page-dark #101217 */
+    --foreground: 224 35% 94%; /* ink-dark #EAEDF5 */
+    --card: 222 16% 12%; /* bg-card-dark #1A1D24 */
+    --card-foreground: 224 35% 94%;
+    --popover: 222 16% 12%;
+    --popover-foreground: 224 35% 94%;
+    --primary: 216 94% 53%; /* brand blue fills — same value in both themes */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 12% 15%;
+    --secondary-foreground: 224 35% 94%;
+    --muted: 220 12% 15%; /* bg-muted-dark #21242A */
+    --muted-foreground: 223 10% 65%; /* ink-secondary-dark #9EA3B0 */
+    --accent: 215 42% 16%; /* primary-soft-dark #18263A */
+    --accent-foreground: 224 35% 94%;
+    --destructive: 5 65% 58%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 222 13% 20%; /* border-light-dark #2D313A */
+    --input: 222 13% 20%;
+    --ring: 216 94% 53%;
+    --sidebar-background: 223 18% 8%;
+    --sidebar-foreground: 224 35% 94%;
+    --sidebar-primary: 216 94% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 42% 16%;
+    --sidebar-accent-foreground: 224 35% 94%;
+    --sidebar-border: 222 13% 20%;
+    --sidebar-ring: 216 94% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
