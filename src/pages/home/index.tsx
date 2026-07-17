@@ -297,9 +297,9 @@ export default function HomePage() {
                 type="button"
                 onClick={() => setShowCheckInRules(true)}
                 aria-label="查看签到规则"
-                className="inline-flex items-center justify-center size-4 -m-1 p-1"
+                className="inline-flex items-center justify-center size-6 -m-1"
               >
-                <Info size={13} className={inkDis} />
+                <Info size={16} className={inkDis} />
               </button>
             </p>
             {hasSignedToday ? (
