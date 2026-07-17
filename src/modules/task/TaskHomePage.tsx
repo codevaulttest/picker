@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 
 const SERVICE_DETAILS: Record<string, { desc: string; price: string; unit: string; features: string[] }> = {
   clean: { desc: "专业家政保洁，包括日常清洁、深度保洁、开荒保洁", price: "50", unit: "小时", features: ["日常保洁", "深度保洁", "开荒保洁"] },
-  massage: { desc: "上门按摩推拿，中式推拿、精油SPA、足疗", price: "100", unit: "小时", features: ["中式推拿", "精油SPA", "足疗按摩"] },
+  massage: { desc: "上门按摩推拿，中式推拿、精油 SPA、足疗", price: "100", unit: "小时", features: ["中式推拿", "精油 SPA", "足疗按摩"] },
   repair: { desc: "家电维修，空调、冰箱、洗衣机、电视等", price: "80", unit: "次", features: ["空调维修", "冰箱维修", "洗衣机维修"] },
   move: { desc: "搬家拉货，小型搬家、长途搬家、公司搬迁", price: "200", unit: "次", features: ["小型搬家", "长途搬家", "公司搬迁"] },
   ac: { desc: "空调清洗保养，挂机、柜机、中央空调", price: "80", unit: "次", features: ["挂机清洗", "柜机清洗", "中央空调"] },

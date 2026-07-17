@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GAME } from "@/config/app.config";
 
 const VAULT_PAY_KEY = "pke_vault_auth_pay";
+const VAULT_ACCOUNT_KEY = "pke_vault_account";
 
 function rowPress(isDark: boolean) {
   return isDark ? "active:bg-game-bg-muted-dark" : "active:bg-game-bg-muted/80";
@@ -38,6 +39,7 @@ export default function SecurityMorePage() {
     localStorage.removeItem("pke_avatar");
     localStorage.removeItem("pke_nickname");
     localStorage.removeItem(VAULT_PAY_KEY);
+    localStorage.removeItem(VAULT_ACCOUNT_KEY);
     window.location.reload();
   };
 

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Routes, Route } from "react-router";
 import { Toaster } from "@/components/ui/sonner";
 import AppLayout from "@/components/layout/AppLayout";
+import SplashPage from "@/pages/splash";
 import HomePage from "@/pages/home";
 import AuthCodePage from "@/pages/auth-code";
 import UpgradeCodePage from "@/pages/upgrade-code";
@@ -21,7 +23,25 @@ import SupportPage from "@/pages/support";
 import LoginPage from "@/pages/account-login";
 import { TaskLayout } from "@/modules/task";
 
+/** 单个会话内只展示一次开屏欢迎页；标签页关闭/新会话会再次出现 */
+const SPLASH_SEEN_KEY = "pke_splash_seen";
+
 export default function App() {
+  const [showSplash, setShowSplash] = useState(
+    () => sessionStorage.getItem(SPLASH_SEEN_KEY) !== "1"
+  );
+
+  if (showSplash) {
+    return (
+      <SplashPage
+        onDone={() => {
+          sessionStorage.setItem(SPLASH_SEEN_KEY, "1");
+          setShowSplash(false);
+        }}
+      />
+    );
+  }
+
   return (
     <>
       <Toaster />

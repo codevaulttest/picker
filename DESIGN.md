@@ -515,6 +515,16 @@ Everything else with a ❌ above is fill/icon/large-bold-only by rule (see the C
 ### Tooltip / Popover
 - Mobile default: prefer Dialog / Sheet over hover tooltips. If needed (desktop preview / rare ⓘ): `{colors.ink}` fill, white caption text, `{rounded.small}` 8px, max-width 240px; never primary-blue tooltip chrome.
 
+### Splash / 开屏欢迎页
+- Purpose: cold-start brand moment only — no CTA, no fork. Plays once per session, auto-advances into Home after a short brand-moment pause; tap anywhere skips the wait immediately. Not a fake-loading gate — no skeleton, no spinner.
+- Background: full-bleed `{colors.page-gradient}` (`{colors.page-gradient-dark}`) + `{colors.header-glow}` (`{colors.header-glow-dark}`) layered on top for the same soft radial brand-blue wash used on Home/Donor headers — no new gradient invented.
+- Mark: brand glyph in a 96px `{rounded.card}` tile, `{colors.bg-card}` fill, `shadow-warm`; enters with `{motion.splash-pop}`.
+- Wordmark: welcome line ("欢迎使用 P 客") in `{typography.identity-name}` (20px/600), `{colors.ink}`, 20px below the mark; enters with `{motion.splash-fade-up}` (staggered 80ms after the mark). No slogan/tagline copy below it — the mark + welcome line is the whole message.
+- Timing: auto-navigates to Home ≈1.8s after mount — long enough for the entrance to finish reading, short enough not to feel like a stall.
+- Motion tokens (`tailwind.config.js` → `keyframes`/`animation`, no bespoke one-off transitions in components):
+  - `{motion.splash-pop}` — mark entrance: opacity 0→1 + scale 0.85→1, 480ms `cubic-bezier(0.34,1.56,0.64,1)` (slight overshoot, Duolingo-style pop, not a bounce loop).
+  - `{motion.splash-fade-up}` — text entrance: opacity 0→1 + translateY 12px→0, 420ms ease-out.
+
 ### Bottom Navigation
 - Height ≈92px (re-measured from 80px; includes the Home Indicator safe area), top corners rounded `{rounded.nav-top}` 28px (re-measured from 24px — a documented exception to the 8/12/16/24 radius scale, see Methodology).
 - 5 tabs, each ≈78px wide. Active tab: `{colors.primary}` icon (25–28px) + `{typography.tab-label}` in `{colors.primary-text}` (icon can use the lighter `primary` since it's a graphical element ≥16px, not text; the label under it is small text so it uses the AA-safe `primary-text`). Inactive: `{colors.ink-nav-inactive}` `#555B65` for both icon and label — `ink-tertiary` is too light (2.6:1) to clear the 3:1 UI-component floor at this size.

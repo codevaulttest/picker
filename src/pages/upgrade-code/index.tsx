@@ -103,7 +103,7 @@ export default function UpgradeCodePage() {
       <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
         <DialogContent className="sm:max-w-sm border-0 rounded-2xl">
           <DialogHeader><DialogTitle>转让升级码</DialogTitle></DialogHeader>
-          <input type="text" placeholder="请输入对方ID账号" value={targetId} onChange={(e) => setTargetId(e.target.value)}
+          <input type="text" placeholder="请输入对方 ID 账号" value={targetId} onChange={(e) => setTargetId(e.target.value)}
             className="w-full h-11 px-4 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
           <Button className="w-full h-11 rounded-xl text-white" style={{ background: THEME.orange }}
             onClick={() => selId && user && trMut.mutate({ userId: user.userId, codeIds: [selId], toUserId: targetId })}

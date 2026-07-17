@@ -20,7 +20,7 @@ const CATEGORY_SERVICES: Record<string, { name: string; price: string; sales: st
   ],
   massage: [
     { name: "全身推拿60分钟", price: "128", sales: "5678", rating: "4.9" },
-    { name: "精油SPA90分钟", price: "298", sales: "2345", rating: "4.9" },
+    { name: "精油 SPA90分钟", price: "298", sales: "2345", rating: "4.9" },
     { name: "足疗按摩60分钟", price: "88", sales: "8901", rating: "4.8" },
     { name: "肩颈按摩30分钟", price: "68", sales: "4567", rating: "4.7" },
     { name: "泰式按摩120分钟", price: "398", sales: "1234", rating: "4.9" },
@@ -37,7 +37,7 @@ const CATEGORY_SERVICES: Record<string, { name: string; price: string; sales: st
     { name: "长途搬家", price: "500", sales: "567", rating: "4.9" },
     { name: "公司搬迁", price: "1000", sales: "234", rating: "4.7" },
     { name: "家具拆装", price: "150", sales: "3456", rating: "4.6" },
-    { name: " piano搬运", price: "300", sales: "890", rating: "4.8" },
+    { name: " piano 搬运", price: "300", sales: "890", rating: "4.8" },
   ],
   ac: [
     { name: "挂机清洗", price: "68", sales: "9876", rating: "4.9" },

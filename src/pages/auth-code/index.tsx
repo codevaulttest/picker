@@ -137,7 +137,7 @@ export default function AuthCodePage() {
           <DialogHeader><DialogTitle>转让认证码</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-slate-500">已选择 {selectedIds.length} 个认证码</p>
-            <input type="text" placeholder="请输入对方ID账号" value={targetId} onChange={(e) => setTargetId(e.target.value)}
+            <input type="text" placeholder="请输入对方 ID 账号" value={targetId} onChange={(e) => setTargetId(e.target.value)}
               className="w-full h-11 px-4 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
             <Button className="w-full h-11 rounded-xl text-white" style={{ background: THEME.primary }}
               onClick={() => user && transferMut.mutate({ userId: user.userId, codeIds: selectedIds, toUserId: targetId })}

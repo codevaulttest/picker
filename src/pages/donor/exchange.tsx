@@ -78,7 +78,7 @@ export default function BVExchangePage() {
           })}
           <Button className="w-full h-11 rounded-xl text-white mt-3" style={{ background: THEME.orange }}
             onClick={() => user && upMut.mutate({ userId: user.userId, level: upLevel })} disabled={upMut.isPending}>
-            {upMut.isPending ? "..." : `支付${costs[upLevel]?.toLocaleString()}BV兑换Lv.${upLevel}升级码`}
+            {upMut.isPending ? "..." : `支付${costs[upLevel]?.toLocaleString()}BV兑换Lv.${upLevel} 升级码`}
           </Button>
         </div>
       )}

@@ -101,8 +101,6 @@ export const GAME = {
 // ═══════════════════════════════════════════════════════════
 export const BRAND = {
   name: "P客",
-  slogan: "P客APP - 数字资产管理平台",
-  logo: "/icons/logo.png",
   /** 默认头像（设计稿切图） */
   defaultAvatar: (_seed?: string) => "/icons/user-avatar.png",
 } as const;
@@ -533,7 +531,7 @@ export const TEXT = {
     signInNow: "立即签到",
     toRealName: "去实名认证",
     noData: "暂无收益数据",
-    idCopied: "已复制ID",
+    idCopied: "已复制 ID",
     signInRulesTitle: "签到规则",
     signInRules: [
       "· 贫农及以上等级：连续签到第N天可得N P币，每日最高可得7P币",

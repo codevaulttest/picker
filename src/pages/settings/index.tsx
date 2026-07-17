@@ -7,13 +7,17 @@ import {
 import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
 import { useI18n } from "@/hooks/useI18n";
+import { useToast } from "@/hooks/use-toast";
 import PageHeader from "@/components/layout/PageHeader";
+import RealNameDialog from "@/components/dialogs/RealNameDialog";
 import SwitchAccountSheet from "@/components/dialogs/SwitchAccountSheet";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { t } = useI18n();
   const [showSwitchAccount, setShowSwitchAccount] = useState(false);
+  const [showRealName, setShowRealName] = useState(false);
 
   const isDark = useStore((s) => s.isDark);
   const user = useStore((s) => s.user);
@@ -76,7 +80,7 @@ export default function SettingsPage() {
       {user && !user.isRealName && (
         <section className="mx-3.5 mt-1 flex-shrink-0">
           <button
-            onClick={() => navigate("/security")}
+            onClick={() => setShowRealName(true)}
             className="w-full flex items-center gap-2.5 px-4 py-3 rounded-card transition-colors active:brightness-95"
             style={{ background: isDark ? GAME.rewardGoldSoftDark : GAME.rewardGoldSoft }}
           >
@@ -151,6 +155,16 @@ export default function SettingsPage() {
       </section>
 
       <SwitchAccountSheet open={showSwitchAccount} onOpenChange={setShowSwitchAccount} />
+
+      <RealNameDialog
+        open={showRealName}
+        onClose={() => setShowRealName(false)}
+        onComplete={() => {
+          setShowRealName(false);
+          if (user) setUser({ ...user, isRealName: true } as any);
+          toast({ title: "实名认证成功" });
+        }}
+      />
     </div>
   );
 }

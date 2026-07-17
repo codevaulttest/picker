@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Smartphone } from "lucide-react";
+import { Smartphone, Globe, ChevronDown } from "lucide-react";
+import { type CountryCode } from "libphonenumber-js/min";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +18,8 @@ import {
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { GAME } from "@/config/app.config";
+import { DEFAULT_COUNTRY, findCountry, isPhoneValid, maskPhone, parsePhone } from "@/lib/phoneCountries";
+import CountryCodeSheet from "@/components/dialogs/CountryCodeSheet";
 
 interface Props {
   open: boolean;
@@ -27,7 +30,6 @@ interface Props {
 
 type Step = "phone" | "code";
 
-const PHONE_RE = /^1[3-9]\d{9}$/;
 // 演示用固定验证码：真实后端接入后由服务端下发校验
 const MOCK_CODE = "123456";
 const RESEND_SECONDS = 60;
@@ -38,17 +40,14 @@ const CTA_STYLE = {
   color: GAME.onPrimary,
 } as const;
 
-function maskPhone(phone: string): string {
-  if (phone.length !== 11) return phone;
-  return `${phone.slice(0, 3)}****${phone.slice(7)}`;
-}
-
 export default function PhoneBindDialog({ open, phone, onClose, onComplete }: Props) {
   const isDark = useStore((s) => s.isDark);
   const lang = useStore((s) => s.lang);
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>("phone");
+  const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [draftPhone, setDraftPhone] = useState("");
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [sending, setSending] = useState(false);
@@ -62,8 +61,10 @@ export default function PhoneBindDialog({ open, phone, onClose, onComplete }: Pr
 
   useEffect(() => {
     if (!open) return;
+    const parsed = parsePhone(phone || "");
     setStep("phone");
-    setDraftPhone(phone || "");
+    setCountry(parsed.country);
+    setDraftPhone(parsed.local);
     setPhoneTouched(false);
     setCode("");
     setCodeError("");
@@ -93,8 +94,11 @@ export default function PhoneBindDialog({ open, phone, onClose, onComplete }: Pr
   };
 
   const trimmedPhone = draftPhone.trim();
-  const phoneValid = PHONE_RE.test(trimmedPhone);
+  const countryOption = findCountry(country);
+  const dial = countryOption.dial;
+  const phoneValid = isPhoneValid(trimmedPhone, country);
   const showPhoneError = phoneTouched && trimmedPhone.length > 0 && !phoneValid;
+  const fullPhone = `+${dial}${trimmedPhone}`;
 
   const handleClose = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -114,7 +118,7 @@ export default function PhoneBindDialog({ open, phone, onClose, onComplete }: Pr
       startCooldown();
       toast({
         title: zh ? "验证码已发送" : "Code sent",
-        description: `${zh ? "请查收" : "Sent to"} ${maskPhone(trimmedPhone)}`,
+        description: `${zh ? "请查收" : "Sent to"} +${dial} ${maskPhone(trimmedPhone)}`,
       });
     }, 600);
   };
@@ -145,13 +149,14 @@ export default function PhoneBindDialog({ open, phone, onClose, onComplete }: Pr
         return;
       }
       toast({ title: zh ? "手机号绑定成功" : "Phone linked" });
-      onComplete(trimmedPhone);
+      onComplete(fullPhone);
       handleClose();
     }, 500);
   };
 
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
   const inkDis = isDark ? "text-game-ink-disabled-dark" : "text-game-ink-disabled";
+  const rowPress = isDark ? "active:bg-game-bg-muted-dark" : "active:bg-game-bg-muted/80";
   const outlineBtn = isDark
     ? "border-game-border-light-dark text-game-ink-dark hover:bg-game-bg-muted-dark"
     : "border-game-border-light text-game-ink bg-game-bg-card";
@@ -176,28 +181,43 @@ export default function PhoneBindDialog({ open, phone, onClose, onComplete }: Pr
               <label className={`mb-2 block text-body font-semibold ${ink}`}>
                 {zh ? "手机号" : "Phone number"}
               </label>
-              <div className="relative">
-                <Smartphone
-                  size={16}
-                  className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${inkDis}`}
-                />
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  autoFocus
-                  maxLength={11}
-                  value={draftPhone}
-                  placeholder={zh ? "输入手机号" : "Enter your phone number"}
-                  onChange={(e) => setDraftPhone(e.target.value.replace(/[^0-9]/g, ""))}
-                  onBlur={() => setPhoneTouched(true)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && phoneValid && !sending) handleSendCode();
-                  }}
-                  aria-invalid={showPhoneError}
-                  className={`w-full h-12 pl-9 pr-3 rounded-button border text-task-title outline-none transition-shadow focus:ring-[3px] focus:ring-game-focus-ring dark:focus:ring-game-focus-ring-dark placeholder:text-game-ink-disabled dark:placeholder:text-game-ink-disabled-dark ${
-                    showPhoneError ? fieldError : `focus:border-game-primary ${fieldSurface}`
-                  }`}
-                />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCountryPicker(true)}
+                  className={`h-12 w-[104px] shrink-0 flex items-center gap-1.5 justify-center rounded-button border text-task-title transition-colors ${fieldSurface} ${rowPress}`}
+                >
+                  {countryOption.Flag ? (
+                    <countryOption.Flag className="w-5 h-3.5 rounded-[2px] shrink-0" />
+                  ) : (
+                    <Globe size={14} className={`shrink-0 ${inkDis}`} />
+                  )}
+                  <span>+{dial}</span>
+                  <ChevronDown size={14} className={`shrink-0 ${inkDis}`} />
+                </button>
+                <div className="relative flex-1">
+                  <Smartphone
+                    size={16}
+                    className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${inkDis}`}
+                  />
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoFocus
+                    maxLength={15}
+                    value={draftPhone}
+                    placeholder={zh ? "输入手机号" : "Enter your phone number"}
+                    onChange={(e) => setDraftPhone(e.target.value.replace(/[^0-9]/g, ""))}
+                    onBlur={() => setPhoneTouched(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && phoneValid && !sending) handleSendCode();
+                    }}
+                    aria-invalid={showPhoneError}
+                    className={`w-full h-12 pl-9 pr-3 rounded-button border text-task-title outline-none transition-shadow focus:ring-[3px] focus:ring-game-focus-ring dark:focus:ring-game-focus-ring-dark placeholder:text-game-ink-disabled dark:placeholder:text-game-ink-disabled-dark ${
+                      showPhoneError ? fieldError : `focus:border-game-primary ${fieldSurface}`
+                    }`}
+                  />
+                </div>
               </div>
               {showPhoneError && (
                 <p className="mt-1.5 text-caption" style={{ color: GAME.error }}>
@@ -231,7 +251,7 @@ export default function PhoneBindDialog({ open, phone, onClose, onComplete }: Pr
             <DialogHeader>
               <DialogTitle>{zh ? "填写验证码" : "Enter verification code"}</DialogTitle>
               <DialogDescription>
-                {zh ? "验证码已发送至" : "Code sent to"} {maskPhone(trimmedPhone)}
+                {zh ? "验证码已发送至" : "Code sent to"} +{dial} {maskPhone(trimmedPhone)}
               </DialogDescription>
             </DialogHeader>
 
@@ -302,6 +322,13 @@ export default function PhoneBindDialog({ open, phone, onClose, onComplete }: Pr
           </>
         )}
       </DialogContent>
+
+      <CountryCodeSheet
+        open={showCountryPicker}
+        value={country}
+        onSelect={(v) => { setCountry(v); setPhoneTouched(false); }}
+        onClose={() => setShowCountryPicker(false)}
+      />
     </Dialog>
   );
 }

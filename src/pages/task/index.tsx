@@ -13,7 +13,7 @@ import { useI18n } from "@/hooks/useI18n";
 /** 服务分类详情说明 */
 const SERVICE_DETAILS: Record<string, { desc: string; priceRange: string; unit: string }> = {
   clean: { desc: "专业家政保洁服务，包括日常清洁、深度保洁、开荒保洁等", priceRange: "50-150", unit: "小时" },
-  massage: { desc: "上门按摩推拿服务，包括中式推拿、精油SPA、足疗等", priceRange: "100-300", unit: "小时" },
+  massage: { desc: "上门按摩推拿服务，包括中式推拿、精油 SPA、足疗等", priceRange: "100-300", unit: "小时" },
   repair: { desc: "家电维修服务，包括空调、冰箱、洗衣机、电视等", priceRange: "80-200", unit: "次" },
   move: { desc: "搬家拉货服务，包括小型搬家、长途搬家、公司搬迁等", priceRange: "200-500", unit: "次" },
   ac: { desc: "空调清洗保养服务，包括挂机、柜机、中央空调清洗", priceRange: "80-150", unit: "次" },

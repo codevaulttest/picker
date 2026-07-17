@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Globe, ChevronDown } from "lucide-react";
+import { type CountryCode } from "libphonenumber-js/min";
 import { useStore } from "@/stores";
 import { GAME, BRAND } from "@/config/app.config";
 import { useI18n } from "@/hooks/useI18n";
 import { useToast } from "@/hooks/use-toast";
 import { registerUser } from "@/lib/mockBackend";
+import { DEFAULT_COUNTRY, findCountry } from "@/lib/phoneCountries";
 import HomeMark from "@/components/icons/HomeMark";
+import CountryCodeSheet from "@/components/dialogs/CountryCodeSheet";
 
 const CTA_STYLE = {
   background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})`,
@@ -29,6 +32,8 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState<LoginMode>("code");
   const [account, setAccount] = useState("");
+  const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [cooldown, setCooldown] = useState(0);
@@ -47,8 +52,13 @@ export default function LoginPage() {
     : "bg-game-bg-card border-game-border-light text-game-ink";
   const tabActive = isDark ? "bg-game-bg-card-dark text-game-ink-dark shadow-warm-dark" : "bg-game-bg-card text-game-ink shadow-warm";
   const tabInactive = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
+  const rowPress = isDark ? "active:bg-game-bg-muted-dark" : "active:bg-game-bg-muted/80";
 
   const trimmedAccount = account.trim();
+  // 邮箱登录不需要国际区号；含 @ 时视为邮箱，不含时视为手机号并拼上所选国家/地区区号
+  const isEmailLike = trimmedAccount.includes("@");
+  const countryOption = findCountry(country);
+  const loginIdentifier = trimmedAccount && !isEmailLike ? `+${countryOption.dial}${trimmedAccount}` : trimmedAccount;
   const secondary = mode === "code" ? code.trim() : password.trim();
   const canSubmit = trimmedAccount.length > 0 && secondary.length > 0 && !pending;
 
@@ -71,14 +81,14 @@ export default function LoginPage() {
     startCooldown();
     toast({
       title: t.settings.demoCodeSent,
-      description: `${trimmedAccount} · 123456`,
+      description: `${loginIdentifier} · 123456`,
     });
   };
 
   const handleLogin = async () => {
     if (!canSubmit) return;
     setPending(true);
-    const data = await registerUser(trimmedAccount);
+    const data = await registerUser(loginIdentifier);
     const avatar = BRAND.defaultAvatar(data.pkeId);
     const profile = { ...data.profile, avatar };
     setUser(profile);
@@ -87,7 +97,7 @@ export default function LoginPage() {
     upsertAccount(profile);
     localStorage.setItem("pke_user_id", data.pkeId);
     localStorage.setItem("pke_avatar", avatar);
-    localStorage.setItem("pke_nickname", trimmedAccount);
+    localStorage.setItem("pke_nickname", loginIdentifier);
     setPending(false);
     toast({ title: t.settings.accountAdded });
     navigate(-1);
@@ -125,20 +135,36 @@ export default function LoginPage() {
         >
           <HomeMark size={60} className="text-game-primary" />
         </div>
-        <h1 className={`mt-4 text-section-title ${ink}`}>{BRAND.name}</h1>
-        <p className={`mt-1 text-body ${inkSec}`}>{BRAND.slogan}</p>
+        <h1 className={`mt-4 text-section-title ${ink}`}>欢迎使用 P 客</h1>
 
         <div className="w-full mt-8">
           <label className={`mb-2 block text-body font-semibold ${ink}`}>
             {t.settings.phoneOrEmail}
           </label>
-          <input
-            type="text"
-            value={account}
-            placeholder={t.settings.phoneOrEmailPlaceholder}
-            onChange={(e) => setAccount(e.target.value)}
-            className={`w-full h-12 px-3 rounded-button border text-task-title outline-none transition-shadow focus:border-game-primary focus:ring-[3px] focus:ring-game-focus-ring dark:focus:ring-game-focus-ring-dark placeholder:text-game-ink-disabled dark:placeholder:text-game-ink-disabled-dark ${fieldSurface}`}
-          />
+          <div className="flex gap-2">
+            {!isEmailLike && (
+              <button
+                type="button"
+                onClick={() => setShowCountryPicker(true)}
+                className={`h-12 w-[104px] shrink-0 flex items-center gap-1.5 justify-center rounded-button border text-task-title transition-colors ${fieldSurface} ${rowPress}`}
+              >
+                {countryOption.Flag ? (
+                  <countryOption.Flag className="w-5 h-3.5 rounded-[2px] shrink-0" />
+                ) : (
+                  <Globe size={14} className={`shrink-0 ${inkDis}`} />
+                )}
+                <span>+{countryOption.dial}</span>
+                <ChevronDown size={14} className={`shrink-0 ${inkDis}`} />
+              </button>
+            )}
+            <input
+              type="text"
+              value={account}
+              placeholder={t.settings.phoneOrEmailPlaceholder}
+              onChange={(e) => setAccount(e.target.value)}
+              className={`flex-1 h-12 px-3 rounded-button border text-task-title outline-none transition-shadow focus:border-game-primary focus:ring-[3px] focus:ring-game-focus-ring dark:focus:ring-game-focus-ring-dark placeholder:text-game-ink-disabled dark:placeholder:text-game-ink-disabled-dark ${fieldSurface}`}
+            />
+          </div>
 
           <div className={`mt-4 inline-flex items-center gap-1 rounded-button p-1 ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
             <button
@@ -217,6 +243,13 @@ export default function LoginPage() {
           {t.settings.loginDemoNote}
         </p>
       </div>
+
+      <CountryCodeSheet
+        open={showCountryPicker}
+        value={country}
+        onSelect={setCountry}
+        onClose={() => setShowCountryPicker(false)}
+      />
     </div>
   );
 }

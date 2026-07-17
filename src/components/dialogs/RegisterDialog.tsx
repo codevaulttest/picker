@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { registerUser } from "@/lib/mockBackend";
 import { BRAND, TEXT } from "@/config/app.config";
+import HomeMark from "@/components/icons/HomeMark";
 
 interface Props {
   open: boolean;
@@ -26,7 +27,9 @@ export default function RegisterDialog({ open, onSuccess }: Props) {
       >
         <DialogHeader className="text-center">
           <div className="flex flex-col items-center gap-3">
-            <img src={BRAND.logo} alt={BRAND.name} className="w-16 h-16 rounded-2xl" />
+            <div className="w-16 h-16 rounded-2xl bg-game-bg-card shadow-warm flex items-center justify-center">
+              <HomeMark size={40} className="text-game-primary" />
+            </div>
             <DialogTitle className="text-lg font-semibold">{TEXT.home.welcomeTitle}</DialogTitle>
           </div>
         </DialogHeader>

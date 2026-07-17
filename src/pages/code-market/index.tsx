@@ -9,10 +9,10 @@ import backArrowIcon from "@/assets/svg/svg/custom/back-arrow.svg?url";
 
 const items = [
   { id: 1, type: "认证码", name: "认证码x5", seller: "P客888", price: 2500, asset: "CV", qty: 5 },
-  { id: 2, type: "升级码", name: "Lv.3升级码", seller: "P客666", price: 3000, asset: "BV", qty: 1 },
+  { id: 2, type: "升级码", name: "Lv.3 升级码", seller: "P客666", price: 3000, asset: "BV", qty: 1 },
   { id: 3, type: "认证码", name: "认证码x10", seller: "P客999", price: 5000, asset: "UV", qty: 10 },
   { id: 4, type: "P币", name: "P币x100", seller: "P客777", price: 500, asset: "BV", qty: 100 },
-  { id: 5, type: "升级码", name: "Lv.5升级码", seller: "P客555", price: 50000, asset: "BV", qty: 1 },
+  { id: 5, type: "升级码", name: "Lv.5 升级码", seller: "P客555", price: 50000, asset: "BV", qty: 1 },
 ];
 const filters = ["全部", "认证码", "升级码", "P币"];
 

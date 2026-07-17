@@ -38,7 +38,7 @@ export default function ProxyDonatePage() {
         <Card className="p-4 rounded-2xl border-0 shadow-sm">
           <div className="flex items-center gap-2">
             <Search size={16} style={{ color: THEME.textMuted }} />
-            <input type="text" placeholder="输入对方11位ID账号" value={targetId} onChange={(e) => setTargetId(e.target.value)} maxLength={11}
+            <input type="text" placeholder="输入对方11位 ID 账号" value={targetId} onChange={(e) => setTargetId(e.target.value)} maxLength={11}
               className="flex-1 text-sm focus:outline-none" />
             <Button size="sm" className="rounded-lg text-white" style={{ background: THEME.primary }} onClick={checkId}>校验</Button>
           </div>

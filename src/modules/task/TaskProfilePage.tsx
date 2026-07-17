@@ -128,7 +128,7 @@ export default function TaskProfilePage() {
             <MessageCircle size={18} style={{ color: "#22C55E" }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-bold ${textMain}`}>TDS任务入口</p>
+            <p className={`text-sm font-bold ${textMain}`}>TDS 任务入口</p>
             <p className={`text-[10px] ${textMuted}`}>发起任务或完成任务赚取BV</p>
           </div>
           <ChevronRight size={16} className={textMuted} />

@@ -55,7 +55,7 @@ export default function PageHeader({
   const handleCopyId = () => {
     navigator.clipboard.writeText(displayPkeId);
     toast({
-      title: lang === "en" ? "ID Copied" : lang === "zh-TW" ? "已複製ID" : "已复制ID",
+      title: lang === "en" ? "ID Copied" : lang === "zh-TW" ? "已複製 ID" : "已复制 ID",
       description: displayPkeId,
     });
   };

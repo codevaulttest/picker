@@ -4,8 +4,19 @@ import {
   ChevronLeft, ChevronRight, LogOut, KeyRound, MoreHorizontal,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/hooks/useI18n";
 import {
   GAME,
   SECURITY_MENU,
@@ -16,6 +27,12 @@ import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
 
 const VAULT_PAY_KEY = "pke_vault_auth_pay";
+const VAULT_ACCOUNT_KEY = "pke_vault_account";
+
+/** 生成 8 位 CodeVAULT 账号（首位非 0），仅在首次开启授权时创建一次并持久化 */
+function generateVaultAccount(): string {
+  return String(Math.floor(10000000 + Math.random() * 90000000));
+}
 
 function softForDark(bg: string): string {
   if (bg === GAME.primarySoft) return GAME.primarySoftDark;
@@ -49,6 +66,7 @@ function rowPress(isDark: boolean) {
 export default function SecurityPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useI18n();
   const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
   const isDark = useStore((s) => s.isDark);
@@ -58,29 +76,45 @@ export default function SecurityPage() {
       typeof localStorage !== "undefined" &&
       localStorage.getItem(VAULT_PAY_KEY) === "1"
   );
+  const [vaultAccount, setVaultAccount] = useState(
+    () => (typeof localStorage !== "undefined" && localStorage.getItem(VAULT_ACCOUNT_KEY)) || ""
+  );
   const [showEmailBind, setShowEmailBind] = useState(false);
   const [showPhoneBind, setShowPhoneBind] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const softCard = isDark
     ? "bg-game-bg-card-dark shadow-warm-dark"
     : "bg-game-bg-card shadow-warm";
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
+  const inkSec = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
   const inkDis = isDark ? "text-game-ink-disabled-dark" : "text-game-ink-disabled";
 
-  const clearSession = () => {
+  const handleLogout = () => {
     localStorage.removeItem("pke_user_id");
     localStorage.removeItem("pke_avatar");
     localStorage.removeItem("pke_nickname");
     localStorage.removeItem(VAULT_PAY_KEY);
-    window.location.reload();
+    localStorage.removeItem(VAULT_ACCOUNT_KEY);
+    setUser(null);
+    setShowLogoutConfirm(false);
+    toast({ title: t.settings.loggedOut });
+    navigate("/settings", { replace: true });
   };
 
   const handleVaultPay = (on: boolean) => {
     setVaultPay(on);
     localStorage.setItem(VAULT_PAY_KEY, on ? "1" : "0");
+    let account = vaultAccount;
+    if (on && !account) {
+      account = generateVaultAccount();
+      setVaultAccount(account);
+      localStorage.setItem(VAULT_ACCOUNT_KEY, account);
+    }
     toast({
-      title: on ? "已开启码库授权支付" : "已关闭码库授权支付",
+      title: on ? "已开启 CodeVAULT 授权支付" : "已关闭 CodeVAULT 授权支付",
+      description: on ? `已绑定 CodeVAULT 账号 ${account}` : undefined,
     });
   };
 
@@ -183,7 +217,7 @@ export default function SecurityPage() {
           })}
 
           <div
-            className="w-full flex items-center gap-3 px-4 min-h-14"
+            className="w-full flex items-center gap-3 px-4 py-3"
             style={hairline(isDark, true)}
           >
             <div
@@ -194,13 +228,21 @@ export default function SecurityPage() {
             >
               <KeyRound size={20} style={{ color: GAME.primary }} />
             </div>
-            <span className={`flex-1 text-grid-label truncate ${ink}`}>
-              码库授权支付
-            </span>
+            <div className="flex-1 min-w-0">
+              <p className={`text-grid-label truncate ${ink}`}>CodeVAULT 授权支付</p>
+              <p className={`text-body mt-0.5 ${inkSec}`}>
+                由P客与 CodeVAULT 合作提供，开通后，小额交易将直接从您绑定的 CodeVAULT 账号内扣减
+              </p>
+              {vaultPay && vaultAccount && (
+                <p className="text-body mt-0.5" style={{ color: GAME.primaryText }}>
+                  已绑定账号：{vaultAccount}
+                </p>
+              )}
+            </div>
             <Switch
               checked={vaultPay}
               onCheckedChange={handleVaultPay}
-              aria-label="码库授权支付"
+              aria-label="CodeVAULT 授权支付"
             />
           </div>
 
@@ -229,12 +271,12 @@ export default function SecurityPage() {
       <section className="mx-3.5 mt-2.5 mb-4 pb-2 flex-shrink-0">
         <button
           type="button"
-          onClick={clearSession}
+          onClick={() => setShowLogoutConfirm(true)}
           className={`w-full flex items-center justify-center gap-2 px-4 min-h-14 rounded-card transition-colors ${softCard} ${rowPress(isDark)}`}
         >
           <LogOut size={18} style={{ color: GAME.error }} />
           <span className="text-grid-label" style={{ color: GAME.error }}>
-            切换账号 / 退出登录
+            {t.settings.logout}
           </span>
         </button>
       </section>
@@ -266,6 +308,31 @@ export default function SecurityPage() {
           toast({ title: "实名认证成功" });
         }}
       />
+
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent
+          className={`rounded-card border-0 ${isDark ? "bg-game-bg-card-dark" : "bg-game-bg-card"}`}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className={ink}>{t.settings.logout}</AlertDialogTitle>
+            <AlertDialogDescription className={inkSec}>
+              {t.settings.logoutDesc}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row justify-end gap-2">
+            <AlertDialogCancel className="mt-0 flex-1 rounded-button border-0 sm:flex-initial">
+              {t.settings.cancel}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 rounded-button border-0 sm:flex-initial"
+              style={{ background: GAME.error, color: GAME.onPrimary }}
+              onClick={handleLogout}
+            >
+              {t.settings.logout}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
