@@ -18,6 +18,9 @@ interface AppState {
   setActiveTab: (tab: string) => void;
   showSignIn: boolean;
   setShowSignIn: (show: boolean) => void;
+  // 全屏覆盖类面板（如首页下拉小程序面板）打开时临时隐藏底部导航
+  hideBottomNav: boolean;
+  setHideBottomNav: (v: boolean) => void;
 
   // Auth codes
   authCodes: AuthCode[];
@@ -83,6 +86,8 @@ export const useStore = create<AppState>((set) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   showSignIn: false,
   setShowSignIn: (show) => set({ showSignIn: show }),
+  hideBottomNav: false,
+  setHideBottomNav: (v) => set({ hideBottomNav: v }),
 
   authCodes: [],
   setAuthCodes: (codes) => set({ authCodes: codes }),

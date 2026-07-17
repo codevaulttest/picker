@@ -184,8 +184,9 @@ export default function PageHeader({
                   paddingRight: 8,
                 }}
               >
-                <span className="text-hud-label tabular-nums flex-shrink-0 text-game-primary-text">
-                  LV.{level} {lvConfig.cnName}
+                <span className="flex-shrink-0 text-game-primary-text">
+                  <span className="text-caption">称号：</span>
+                  <span className="text-hud-label">{lvConfig.cnName}</span>
                 </span>
               </div>
             )}

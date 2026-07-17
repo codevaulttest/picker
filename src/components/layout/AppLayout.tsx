@@ -45,6 +45,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const activeTab = useStore((s) => s.activeTab);
   const setActiveTab = useStore((s) => s.setActiveTab);
   const isDark = useStore((s) => s.isDark);
+  const hideBottomNav = useStore((s) => s.hideBottomNav);
 
   // Tailwind `dark:`（Dialog 等）依赖 html.dark，与 zustand isDark 同步
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isSecurity = location.pathname.startsWith("/security");
   const isDonor = location.pathname.startsWith("/donor");
   const useWarmGradient = isHome || isProfile || isSecurity || isDonor;
-  const hideNav = isTaskRoute || isLoginRoute;
+  const hideNav = isTaskRoute || isLoginRoute || hideBottomNav;
 
   // DESIGN.md: light card @ 95%；dark → bg-card-dark（暖炭，禁止 cool slate）
   const navBg = isDark ? "rgba(36, 31, 26, 0.95)" : "rgba(255, 255, 255, 0.95)";

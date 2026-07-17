@@ -336,7 +336,10 @@ export default function TaskPage() {
             <div className={`space-y-3 p-4 rounded-xl ${isDark ? "bg-slate-700/50" : "bg-slate-50"}`}>
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${textSecondary}`}>{t.task.yourLevel}</span>
-                <span className="text-sm font-bold" style={{ color: lvConfig.color }}>LV.{lv} {lvConfig.cnName}</span>
+                <span style={{ color: lvConfig.color }}>
+                  <span className="text-xs">称号：</span>
+                  <span className="text-sm font-bold">{lvConfig.cnName}</span>
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${textSecondary}`}>{t.task.yourName}</span>

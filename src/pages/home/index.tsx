@@ -20,9 +20,8 @@ function toDateStr(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-// 下拉唤出小程序面板：拖拽阻尼系数 / 展开高度 / 开合阈值
+// 下拉唤出小程序面板：拖拽阻尼系数 / 开合阈值（展开高度按视口 80% 动态计算，见 PULL_MAX）
 const PULL_RESISTANCE = 0.55;
-const PULL_MAX = 200;
 const PULL_THRESHOLD = 64;
 
 export default function HomePage() {
@@ -33,6 +32,7 @@ export default function HomePage() {
   const setAssets = useStore((s) => s.setAssets);
   const guestMode = useStore((s) => s.guestMode);
   const isDark = useStore((s) => s.isDark);
+  const setHideBottomNav = useStore((s) => s.setHideBottomNav);
   const { t } = useI18n();
   const [showSignIn, setShowSignIn] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
@@ -41,9 +41,17 @@ export default function HomePage() {
   const pkeId = localStorage.getItem("pke_user_id");
 
   // 仿微信「下拉唤出小程序」：贴顶下拉时面板随手势展开，越过阈值松手即定住展开态
+  // 展开高度为视口 80%，底部留 20% 露出首页 header，可点击/上拉收起回到首页
   const containerRef = useRef<HTMLDivElement>(null);
+  const [pullMax, setPullMax] = useState(() => (typeof window !== "undefined" ? Math.round(window.innerHeight * 0.8) : 600));
   const [pullDistance, setPullDistance] = useState(0);
   const [miniProgramOpen, setMiniProgramOpen] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => setPullMax(Math.round(window.innerHeight * 0.8));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const dragRef = useRef<{ dragging: boolean; startY: number; base: number; moved: boolean; pointerId: number }>({
     dragging: false,
     startY: 0,
@@ -67,6 +75,12 @@ export default function HomePage() {
     return () => scrollEl.removeEventListener("scroll", onScroll);
   }, [miniProgramOpen]);
 
+  // 面板展开时隐藏底部导航；离开页面时兜底恢复，避免状态泄漏到其他页面
+  useEffect(() => {
+    setHideBottomNav(miniProgramOpen);
+    return () => setHideBottomNav(false);
+  }, [miniProgramOpen, setHideBottomNav]);
+
   const handlePullPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     const scrollEl = containerRef.current?.closest("main");
@@ -78,7 +92,7 @@ export default function HomePage() {
     if (!d.dragging || e.pointerId !== d.pointerId) return;
     const delta = e.clientY - d.startY;
     if (Math.abs(delta) > 8) d.moved = true;
-    const next = Math.max(0, Math.min(PULL_MAX, d.base + delta * PULL_RESISTANCE));
+    const next = Math.max(0, Math.min(pullMax, d.base + delta * PULL_RESISTANCE));
     if (Math.abs(next - pullDistance) > 0.5) {
       e.preventDefault();
       setPullDistance(next);
@@ -92,7 +106,7 @@ export default function HomePage() {
     setPullDistance((cur) => {
       const shouldOpen = cur >= PULL_THRESHOLD;
       setMiniProgramOpen(shouldOpen);
-      return shouldOpen ? PULL_MAX : 0;
+      return shouldOpen ? pullMax : 0;
     });
   };
   const closeMiniProgramPanel = () => {
@@ -182,7 +196,7 @@ export default function HomePage() {
       <RealNameDialog open={showRealName} onComplete={() => { setShowRealName(false); if (user) setUser({ ...user, isRealName: true } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
       <CheckInRulesDialog open={showCheckInRules} onClose={() => setShowCheckInRules(false)} />
 
-      {/* 下拉唤出小程序面板：贴顶下拉展开，越过阈值松手定住 */}
+      {/* 下拉唤出小程序面板：贴顶下拉展开至视口 80%，底部留白露出首页 header，可点击/上拉收起 */}
       <div
         className="mx-3.5 flex-shrink-0 overflow-hidden"
         style={{
@@ -192,10 +206,10 @@ export default function HomePage() {
       >
         <div
           data-pull-panel
-          className={`p-3.5 rounded-card transition-colors ${softCard}`}
-          style={{ height: PULL_MAX, opacity: pullDistance > 4 ? Math.min(1, pullDistance / 40) : 0 }}
+          className={`p-3.5 rounded-card transition-colors flex flex-col ${softCard}`}
+          style={{ height: pullMax, opacity: pullDistance > 4 ? Math.min(1, pullDistance / 40) : 0 }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-shrink-0">
             <span className={`text-caption ${inkTer}`}>
               {miniProgramOpen ? "小程序" : pullRatio >= 1 ? "松开进入小程序" : "下拉查看小程序"}
             </span>
@@ -205,8 +219,8 @@ export default function HomePage() {
               style={{ transform: `rotate(${miniProgramOpen || pullRatio >= 1 ? 180 : 0}deg)`, transition: "transform 0.2s" }}
             />
           </div>
-          <div className="grid grid-cols-4 gap-y-3 mt-2.5">
-            {MINI_PROGRAMS.slice(0, 7).map((app) => (
+          <div className="flex flex-col gap-1 mt-2.5 overflow-y-auto">
+            {MINI_PROGRAMS.map((app) => (
               <button
                 key={app.key}
                 type="button"
@@ -214,23 +228,35 @@ export default function HomePage() {
                   closeMiniProgramPanel();
                   toast({ title: `(Demo)打开「${app.name}」`, variant: "info" });
                 }}
-                className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+                className={`w-full flex items-center gap-3 py-2.5 rounded-button text-left transition-colors active:scale-[0.98] ${isDark ? "active:bg-game-bg-muted-dark" : "active:bg-game-bg-muted"}`}
               >
                 <div className={`w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0 ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
                   <Image size={18} strokeWidth={1.75} className={inkTer} />
                 </div>
-                <span className={`text-caption ${inkSec} truncate w-full text-center`}>{app.name}</span>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-grid-label truncate ${ink}`}>{app.name}</p>
+                  <p className={`text-caption mt-0.5 truncate ${inkTer}`}>{app.desc}</p>
+                </div>
               </button>
             ))}
             <button
               type="button"
               onClick={() => { closeMiniProgramPanel(); navigate("/mini-program"); }}
-              className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+              className={`w-full flex items-center gap-3 py-2.5 mt-1 rounded-button text-left transition-colors active:scale-[0.98] border-t ${
+                isDark ? "border-game-divider-dark active:bg-game-bg-muted-dark" : "border-game-divider active:bg-game-bg-muted"
+              }`}
             >
-              <div className={`w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0 ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
-                <MoreHorizontal size={20} className={inkTer} />
+              <div
+                className="w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0 mt-1"
+                style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
+              >
+                <MoreHorizontal size={20} style={{ color: GAME.primary }} />
               </div>
-              <span className={`text-caption ${inkSec} truncate w-full text-center`}>更多</span>
+              <div className="flex-1 min-w-0 mt-1">
+                <p className={`text-grid-label truncate ${ink}`}>更多小程序</p>
+                <p className={`text-caption mt-0.5 truncate ${inkTer}`}>查看全部小程序入口</p>
+              </div>
+              <ChevronRight size={16} className={`flex-shrink-0 mt-1 ${inkDis}`} />
             </button>
           </div>
         </div>
@@ -251,10 +277,11 @@ export default function HomePage() {
               className="w-9 h-9 rounded-pill object-cover flex-shrink-0"
             />
             <span
-              className="text-hud-label tabular-nums px-2 py-0.5 rounded-badge text-game-primary-text"
+              className="px-2 py-0.5 rounded-badge text-game-primary-text"
               style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
             >
-              LV.{level} {lvConfig.cnName}
+              <span className="text-caption">称号：</span>
+              <span className="text-hud-label">{lvConfig.cnName}</span>
             </span>
           </button>
         ) : (
@@ -372,11 +399,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 我的资产 — 紧凑入口，面积不超过实名认证横幅 */}
+      {/* 我的资产入口 */}
       <section className="mx-3.5 mt-2.5 flex-shrink-0">
         <button
           onClick={() => navigate("/wealth")}
-          className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-card transition-colors active:brightness-95 ${softCard}`}
+          className={`w-full flex items-center gap-2.5 px-4 py-5 rounded-card transition-colors active:brightness-95 ${softCard}`}
         >
           <Wallet size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
           <span className={`flex-1 text-left text-grid-label ${ink}`}>我的资产</span>
@@ -405,7 +432,6 @@ export default function HomePage() {
           <>
           <div className="flex items-center gap-1">
             <span className={`text-section-title ${ink}`}>近7日BV收益</span>
-            <Info size={13} className={inkDis} />
           </div>
 
           <div className="flex items-baseline gap-1.5 mt-2">
