@@ -7,7 +7,7 @@
 import {
   Home, CircleDot, Gift, HandCoins, KeyRound, ArrowUpDown,
   Star, Users, Smartphone,
-  Mail, Fingerprint, Lock, CreditCard, UserCheck, Beef, TreePine,
+  Mail, ScanFace, Lock, CreditCard, UserCheck, Beef, TreePine,
   Wine, Wallet, ShieldCheck, Coins,
   ClipboardList, Hourglass, Link2, Gem, type LucideIcon,
 } from "lucide-react";
@@ -432,8 +432,6 @@ export const SECURITY_MENU: SecurityMenuConfig[] = [
     icon: Smartphone,
     color: GAME.infoBlue,
     bg: GAME.infoSoft,
-    status: "已绑定",
-    statusTone: "success",
   },
   {
     key: "email",
@@ -441,13 +439,11 @@ export const SECURITY_MENU: SecurityMenuConfig[] = [
     icon: Mail,
     color: GAME.infoBlue,
     bg: GAME.infoSoft,
-    status: "未绑定",
-    statusTone: "muted",
   },
   {
-    key: "fp-login",
-    label: "指纹登录",
-    icon: Fingerprint,
+    key: "face-login",
+    label: "面容登录",
+    icon: ScanFace,
     color: GAME.primary,
     bg: GAME.primarySoft,
     status: "未开启",
@@ -461,8 +457,8 @@ export const SECURITY_MENU: SecurityMenuConfig[] = [
     bg: GAME.bgMuted,
   },
   {
-    key: "fp-pay",
-    label: "指纹支付",
+    key: "face-pay",
+    label: "面容支付",
     icon: CreditCard,
     color: GAME.rewardGold,
     bg: GAME.rewardGoldSoft,
@@ -479,7 +475,7 @@ export const SECURITY_MENU: SecurityMenuConfig[] = [
   {
     key: "face",
     label: "人脸登记",
-    icon: Fingerprint,
+    icon: ScanFace,
     color: GAME.primary,
     bg: GAME.primarySoft,
     status: "未登记",
@@ -540,7 +536,7 @@ export const TEXT = {
     idCopied: "已复制ID",
     signInRulesTitle: "签到规则",
     signInRules: [
-      "· 贫农及以上等级：连续签到第N天可得N P币，每日最高可得10P币",
+      "· 贫农及以上等级：连续签到第N天可得N P币，每日最高可得7P币",
       "· 长工等级奖励为其他等级的一半",
       "· 中途断签后，连续签到天数将重新从第1天开始计算",
       "· 当日签到成功后，奖励将于次日到账",

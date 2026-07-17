@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
@@ -15,15 +15,14 @@ interface Props {
   onClose: () => void;
 }
 
-type Step = "name" | "idcard" | "face" | "code" | "done";
+type Step = "idcard" | "face" | "code" | "done";
 
-/** 实名认证弹窗 - 支持调相册/调摄像头/可关闭 */
+/** 实名认证全屏流程 - 支持调相册/调摄像头/可关闭 */
 export default function RealNameDialog({ open, onComplete, onClose }: Props) {
   const { toast } = useToast();
   const isDark = useStore((s) => s.isDark);
-  const [step, setStep] = useState<Step>("name");
-  const [realName, setRealName] = useState("");
-  const [idNumber, setIdNumber] = useState("");
+  const setHideBottomNav = useStore((s) => s.setHideBottomNav);
+  const [step, setStep] = useState<Step>("idcard");
   const [authCode, setAuthCode] = useState("");
   const [faceAction, setFaceAction] = useState(0);
   const [frontImg, setFrontImg] = useState<string | null>(null);
@@ -36,9 +35,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
   const actions = ["请眨眼", "请摇头", "请张嘴"];
 
   const reset = useCallback(() => {
-    setStep("name");
-    setRealName("");
-    setIdNumber("");
+    setStep("idcard");
     setAuthCode("");
     setFaceAction(0);
     setFrontImg(null);
@@ -82,11 +79,9 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
   };
 
   const handleNext = () => {
-    if (step === "name" && realName.trim()) {
-      setStep("idcard");
-    } else if (step === "idcard") {
-      if (!frontImg && !idNumber.trim()) {
-        toast({ title: "请上传身份证或输入证件号" });
+    if (step === "idcard") {
+      if (!frontImg) {
+        toast({ title: "请上传身份证正面" });
         return;
       }
       setStep("face");
@@ -115,25 +110,48 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
     }
   };
 
-  const progress = (["name", "idcard", "face", "code", "done"] as Step[]).indexOf(step) + 1;
+  const progress = (["idcard", "face", "code", "done"] as Step[]).indexOf(step) + 1;
+
+  useEffect(() => {
+    if (!open) return;
+    setHideBottomNav(true);
+    return () => setHideBottomNav(false);
+  }, [open, setHideBottomNav]);
+
+  if (!open) return null;
+
+  const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
+  const bgPage = isDark ? "bg-game-bg-page-dark" : "bg-game-bg-page";
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="sm:max-w-sm border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-center text-lg">
-            {step === "name" && "实名认证"}
+    <div className={`fixed inset-0 z-50 flex flex-col transition-colors ${bgPage}`}>
+      <header className="relative px-3.5 pt-3.5 pb-2 flex-shrink-0">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: isDark ? GAME.headerGlowDark : GAME.headerGlow }}
+          aria-hidden
+        />
+        <div className="relative z-10 flex items-center h-11">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="relative z-10 flex size-11 items-center justify-center -ml-2 rounded-button"
+            aria-label="返回"
+          >
+            <ChevronLeft size={22} strokeWidth={2} className={ink} />
+          </button>
+          <h1 className={`pointer-events-none absolute inset-x-0 text-center text-section-title ${ink}`}>
             {step === "idcard" && "上传身份信息"}
             {step === "face" && "人脸核验"}
             {step === "code" && "填写认证码"}
             {step === "done" && "认证成功"}
-          </DialogTitle>
-        </DialogHeader>
+          </h1>
+        </div>
 
         {/* 进度条 */}
         {step !== "done" && (
-          <div className="flex gap-1 mb-2">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="relative z-10 flex gap-1 mt-3">
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
                 className={`flex-1 h-1.5 rounded-full transition-all ${progress < i ? (isDark ? "bg-game-border-light-dark" : "bg-game-border-light") : ""}`}
@@ -142,20 +160,10 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
             ))}
           </div>
         )}
+      </header>
 
-        <div className="py-2 space-y-4">
-          {/* 步骤1：姓名 */}
-          {step === "name" && (
-            <>
-              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>请输入您的真实姓名</p>
-              <input type="text" placeholder="真实姓名" value={realName} onChange={(e) => setRealName(e.target.value)}
-                className={`w-full h-12 px-4 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-game-primary-light ${
-                  isDark ? "bg-game-bg-muted-dark border-game-border-light-dark text-game-ink-dark" : "bg-white border-game-border-light text-game-ink"
-                }`} />
-            </>
-          )}
-
-          {/* 步骤2：身份证 - 可调相册 */}
+      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4">
+          {/* 步骤1：身份证 - 可调相册 */}
           {step === "idcard" && (
             <>
               <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>请上传身份证正反面</p>
@@ -181,15 +189,10 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
                   <input ref={backInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "back")} />
                 </button>
               </div>
-              <p className={`text-xs text-center ${isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}`}>或手动输入证件号码</p>
-              <input type="text" placeholder="身份证号码（18位）" value={idNumber} onChange={(e) => setIdNumber(e.target.value)}
-                className={`w-full h-12 px-4 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-game-primary-light ${
-                  isDark ? "bg-game-bg-muted-dark border-game-border-light-dark text-game-ink-dark" : "bg-white border-game-border-light text-game-ink"
-                }`} />
             </>
           )}
 
-          {/* 步骤3：人脸 - 调摄像头 */}
+          {/* 步骤2：人脸 - 调摄像头 */}
           {step === "face" && (
             <div className="text-center space-y-4">
               <div className="relative w-40 h-40 rounded-full mx-auto overflow-hidden flex items-center justify-center"
@@ -219,7 +222,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
             </div>
           )}
 
-          {/* 步骤4：认证码 */}
+          {/* 步骤3：认证码 */}
           {step === "code" && (
             <>
               <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>请输入12位认证码完成实名</p>
@@ -251,8 +254,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
               {step === "code" ? "完成认证" : "下一步"}
             </Button>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

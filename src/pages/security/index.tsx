@@ -12,6 +12,8 @@ import {
   type SecurityStatusTone,
 } from "@/config/app.config";
 import EmailBindDialog from "@/components/dialogs/EmailBindDialog";
+import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
+import RealNameDialog from "@/components/dialogs/RealNameDialog";
 
 const VAULT_PAY_KEY = "pke_vault_auth_pay";
 
@@ -57,6 +59,8 @@ export default function SecurityPage() {
       localStorage.getItem(VAULT_PAY_KEY) === "1"
   );
   const [showEmailBind, setShowEmailBind] = useState(false);
+  const [showPhoneBind, setShowPhoneBind] = useState(false);
+  const [showRealName, setShowRealName] = useState(false);
 
   const softCard = isDark
     ? "bg-game-bg-card-dark shadow-warm-dark"
@@ -112,6 +116,7 @@ export default function SecurityPage() {
             const iconBg = isDark ? softForDark(item.bg) : item.bg;
             const isRealname = item.key === "realname";
             const isEmail = item.key === "email";
+            const isPhone = item.key === "phone";
             const status = isRealname
               ? user?.isRealName
                 ? "已认证"
@@ -120,7 +125,11 @@ export default function SecurityPage() {
                 ? user?.email
                   ? "已绑定"
                   : "未绑定"
-                : item.status;
+                : isPhone
+                  ? user?.phone
+                    ? "已绑定"
+                    : "未绑定"
+                  : item.status;
             const tone: SecurityStatusTone | undefined = isRealname
               ? user?.isRealName
                 ? "success"
@@ -129,13 +138,25 @@ export default function SecurityPage() {
                 ? user?.email
                   ? "success"
                   : "muted"
-                : item.statusTone;
+                : isPhone
+                  ? user?.phone
+                    ? "success"
+                    : "muted"
+                  : item.statusTone;
 
             return (
               <button
                 key={item.key}
                 type="button"
-                onClick={isEmail ? () => setShowEmailBind(true) : undefined}
+                onClick={
+                  isRealname
+                    ? () => setShowRealName(true)
+                    : isEmail
+                      ? () => setShowEmailBind(true)
+                      : isPhone
+                        ? () => setShowPhoneBind(true)
+                        : undefined
+                }
                 className={`w-full flex items-center gap-3 px-4 text-left transition-colors min-h-14 ${rowPress(isDark)}`}
                 style={hairline(isDark, true)}
               >
@@ -224,6 +245,25 @@ export default function SecurityPage() {
         onClose={() => setShowEmailBind(false)}
         onComplete={(email) => {
           if (user) setUser({ ...user, email } as any);
+        }}
+      />
+
+      <PhoneBindDialog
+        open={showPhoneBind}
+        phone={user?.phone}
+        onClose={() => setShowPhoneBind(false)}
+        onComplete={(phone) => {
+          if (user) setUser({ ...user, phone } as any);
+        }}
+      />
+
+      <RealNameDialog
+        open={showRealName}
+        onClose={() => setShowRealName(false)}
+        onComplete={() => {
+          setShowRealName(false);
+          if (user) setUser({ ...user, isRealName: true } as any);
+          toast({ title: "实名认证成功" });
         }}
       />
     </div>

@@ -114,7 +114,7 @@ function migrateProfile(profile: UserProfile): UserProfile {
 }
 
 // 签到奖励：第N天=N P币（贫农及以上等级），长工等级减半，每日最高10P币
-export const SIGN_IN_REWARD_CAP_DAYS = 10;
+export const SIGN_IN_REWARD_CAP_DAYS = 7;
 // 未签到次日倒扣：断1天扣10，断2天扣20，断3天及以上封顶扣40
 const SIGN_IN_PENALTY_SCHEDULE = [10, 20, 40];
 

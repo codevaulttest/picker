@@ -33,7 +33,7 @@ const NAV_SHADOW_FILTER = `drop-shadow(${GAME.navShadow.replace(" 0 rgba", " rgb
 const TABS_IMG = [
   { key: "home", label: "P客", icon: HomeMark, path: "/" },
   { key: "knowledge", label: "知识宇宙", icon: Planet, path: null as string | null, demoToast: "(Demo)跳转「知识宇宙」" },
-  { key: "task", label: "任务", icon: ClipboardCheckFilled, path: null as string | null, demoToast: "(Demo)跳转「TDS」（任务系统 CAS）" },
+  { key: "task", label: "任务", icon: ClipboardCheckFilled, path: null as string | null, externalUrl: "https://pke-task.web.app" },
   { key: "donor", label: "东家", icon: DonorMark, path: null as string | null, demoToast: "(Demo)跳转「东家打赏」" },
   { key: "profile", label: "我的", icon: ProfileMark, path: "/settings" },
 ];
@@ -167,6 +167,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <button
                     key={tab.key}
                     onClick={() => {
+                      if ("externalUrl" in tab && tab.externalUrl) {
+                        window.location.href = tab.externalUrl;
+                        return;
+                      }
                       if ("demoToast" in tab && tab.demoToast) {
                         toast({ title: tab.demoToast, variant: "info" });
                         return;

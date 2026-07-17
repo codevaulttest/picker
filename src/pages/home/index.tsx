@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
-import { Info, Wallet, ChevronRight, Check, LineChart, CalendarCheck, ScanLine, MoreHorizontal, ChevronDown, Image } from "lucide-react";
+import { Info, Wallet, ChevronRight, Check, LineChart, CalendarCheck, ScanLine, Image } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getUserProfile, registerUser, getSignInReward, SIGN_IN_REWARD_CAP_DAYS } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
@@ -210,54 +210,43 @@ export default function HomePage() {
           style={{ height: pullMax, opacity: pullDistance > 4 ? Math.min(1, pullDistance / 40) : 0 }}
         >
           <div className="flex items-center justify-between flex-shrink-0">
-            <span className={`text-caption ${inkTer}`}>
+            <span
+              className={
+                miniProgramOpen
+                  ? `text-section-title ${ink}`
+                  : `text-body ${inkSec}`
+              }
+            >
               {miniProgramOpen ? "小程序" : pullRatio >= 1 ? "松开进入小程序" : "下拉查看小程序"}
             </span>
-            <ChevronDown
-              size={14}
-              className={inkDis}
-              style={{ transform: `rotate(${miniProgramOpen || pullRatio >= 1 ? 180 : 0}deg)`, transition: "transform 0.2s" }}
-            />
-          </div>
-          <div className="flex flex-col gap-1 mt-2.5 overflow-y-auto">
-            {MINI_PROGRAMS.map((app) => (
-              <button
-                key={app.key}
-                type="button"
-                onClick={() => {
-                  closeMiniProgramPanel();
-                  toast({ title: `(Demo)打开「${app.name}」`, variant: "info" });
-                }}
-                className={`w-full flex items-center gap-3 py-2.5 rounded-button text-left transition-colors active:scale-[0.98] ${isDark ? "active:bg-game-bg-muted-dark" : "active:bg-game-bg-muted"}`}
-              >
-                <div className={`w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0 ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
-                  <Image size={18} strokeWidth={1.75} className={inkTer} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-grid-label truncate ${ink}`}>{app.name}</p>
-                  <p className={`text-caption mt-0.5 truncate ${inkTer}`}>{app.desc}</p>
-                </div>
-              </button>
-            ))}
             <button
               type="button"
               onClick={() => { closeMiniProgramPanel(); navigate("/mini-program"); }}
-              className={`w-full flex items-center gap-3 py-2.5 mt-1 rounded-button text-left transition-colors active:scale-[0.98] border-t ${
-                isDark ? "border-game-divider-dark active:bg-game-bg-muted-dark" : "border-game-divider active:bg-game-bg-muted"
-              }`}
+              className="text-caption text-game-primary-text active:opacity-70 transition-opacity"
             >
-              <div
-                className="w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0 mt-1"
-                style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
-              >
-                <MoreHorizontal size={20} style={{ color: GAME.primary }} />
-              </div>
-              <div className="flex-1 min-w-0 mt-1">
-                <p className={`text-grid-label truncate ${ink}`}>更多小程序</p>
-                <p className={`text-caption mt-0.5 truncate ${inkTer}`}>查看全部小程序入口</p>
-              </div>
-              <ChevronRight size={16} className={`flex-shrink-0 mt-1 ${inkDis}`} />
+              更多&gt;
             </button>
+          </div>
+          <div className="flex flex-col mt-2.5 flex-1 min-h-0 overflow-y-auto">
+            <div className="grid grid-cols-3">
+              {MINI_PROGRAMS.map((app) => (
+                <button
+                  key={app.key}
+                  type="button"
+                  onClick={() => {
+                    closeMiniProgramPanel();
+                    toast({ title: `(Demo)打开「${app.name}」`, variant: "info" });
+                  }}
+                  className={`flex flex-col items-center py-2.5 rounded-button text-center transition-colors active:scale-[0.98] ${isDark ? "active:bg-game-bg-muted-dark" : "active:bg-game-bg-muted"}`}
+                >
+                  <div className={`w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0 ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
+                    <Image size={18} strokeWidth={1.75} className={inkTer} />
+                  </div>
+                  <p className={`text-grid-label mt-1.5 truncate w-full px-1 ${ink}`}>{app.name}</p>
+                  <p className={`text-caption mt-0.5 truncate w-full px-1 ${inkTer}`}>{app.desc}</p>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -359,7 +348,7 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="grid grid-cols-5 gap-1 mt-4">
+          <div className="grid grid-cols-7 gap-1 mt-4">
             {Array.from({ length: SIGN_IN_REWARD_CAP_DAYS }, (_, i) => {
               const day = i + 1;
               const isDone = day <= signInStreak;
