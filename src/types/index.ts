@@ -19,6 +19,16 @@ export interface UserProfile {
   name: string;
   avatar: string;
   consecutiveClockInDays: number;
+  /** 每日签到最近一次成功签到日期，用于判断当天是否已签、以及断签检测 */
+  lastCheckInDate: string | null;
+  /** 每日签到连续天数，中途未签到则恢复从第1天开始（与 consecutiveClockInDays 互相独立，后者归早起打卡使用） */
+  signInStreak: number;
+  /** 已签到但奖励尚未到账的 P 币（规则：当日签到成功，次日发放） */
+  pendingSignInReward: number;
+  /** 待发放奖励对应的签到日期，到了下一天才会结算入账 */
+  pendingSignInRewardDate: string | null;
+  /** 已扣过款的未签到日期，避免同一天被重复倒扣 */
+  penaltyAppliedDates: string[];
   assets?: UserAssets;
 }
 

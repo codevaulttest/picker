@@ -3,16 +3,22 @@ import { useNavigate } from "react-router";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { Info, Wallet, ChevronRight, Check, LineChart, CalendarCheck, ScanLine, MoreHorizontal, ChevronDown, Image } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getUserProfile, registerUser } from "@/lib/mockBackend";
+import { getUserProfile, registerUser, getSignInReward, SIGN_IN_REWARD_CAP_DAYS } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { GAME, HOME_FEATURES, BRAND, getLevel, MINI_PROGRAMS } from "@/config/app.config";
 import { useI18n } from "@/hooks/useI18n";
 import SignInDialog from "@/components/dialogs/SignInDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
+import CheckInRulesDialog from "@/components/dialogs/CheckInRulesDialog";
 
-// 连续签到奖励梯度：第N天 = N*10 BV
-const CHECK_IN_REWARDS = [10, 20, 30, 40, 50, 60, 70];
+function formatReward(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
+function toDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 
 // 下拉唤出小程序面板：拖拽阻尼系数 / 展开高度 / 开合阈值
 const PULL_RESISTANCE = 0.55;
@@ -30,6 +36,7 @@ export default function HomePage() {
   const { t } = useI18n();
   const [showSignIn, setShowSignIn] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
+  const [showCheckInRules, setShowCheckInRules] = useState(false);
   const [pbIncome, setPbIncome] = useState<{ date: string; amount: number }[]>([]);
   const pkeId = localStorage.getItem("pke_user_id");
 
@@ -129,8 +136,11 @@ export default function HomePage() {
   }, []);
 
   const totalGain = pbIncome.length ? pbIncome[pbIncome.length - 1].amount : 0;
-  const consecutiveDays = user?.consecutiveClockInDays ?? 0;
-  const nextRewardDay = Math.min(consecutiveDays + 1, 7);
+  const isChangGong = (user?.level ?? 1) === 1;
+  const signInStreak = user?.signInStreak ?? 0;
+  const hasSignedToday = !!user?.lastCheckInDate && user.lastCheckInDate === toDateStr(new Date());
+  const nextRewardDay = Math.min(signInStreak + 1, SIGN_IN_REWARD_CAP_DAYS);
+  const nextReward = getSignInReward(nextRewardDay, isChangGong);
   const level = user?.level || 1;
   const lvConfig = getLevel(level);
   const savedAvatar = localStorage.getItem("pke_avatar");
@@ -170,6 +180,7 @@ export default function HomePage() {
     >
       <SignInDialog open={showSignIn} onClose={() => setShowSignIn(false)} />
       <RealNameDialog open={showRealName} onComplete={() => { setShowRealName(false); if (user) setUser({ ...user, isRealName: true } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
+      <CheckInRulesDialog open={showCheckInRules} onClose={() => setShowCheckInRules(false)} />
 
       {/* 下拉唤出小程序面板：贴顶下拉展开，越过阈值松手定住 */}
       <div
@@ -275,38 +286,58 @@ export default function HomePage() {
       {/* 连续签到奖励 */}
       <section className="mx-3.5 mt-1 flex-shrink-0">
         <div className={`p-4 rounded-card transition-colors ${softCard}`}>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0 overflow-hidden">
               <img src="/icons/checkin-gift.png" alt="" className="w-8 h-8 object-contain" />
             </div>
-            <p className={`flex-1 text-body ${inkSec}`}>
+            <p className={`flex-1 text-body ${inkSec} flex items-center gap-1`}>
               连续签到 <span className="font-bold text-game-primary tabular-nums">{nextRewardDay}</span> 天可得{" "}
-              <span className="font-bold text-game-primary tabular-nums">
-                {CHECK_IN_REWARDS[nextRewardDay - 1]}
-              </span>{" "}
-              BV
+              <span className="font-bold text-game-primary tabular-nums">{formatReward(nextReward)}</span> P币
+              <button
+                type="button"
+                onClick={() => setShowCheckInRules(true)}
+                aria-label="查看签到规则"
+                className="inline-flex items-center justify-center size-4 -m-1 p-1"
+              >
+                <Info size={13} className={inkDis} />
+              </button>
             </p>
-            <button
-              onClick={() => {
-                if (!user) { navigate("/login"); return; }
-                if (user.isRealName) setShowSignIn(true); else setShowRealName(true);
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-pill text-caption font-bold flex-shrink-0 text-white shadow-sm active:scale-95 transition-all"
-              style={{
-                background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})`,
-                boxShadow: `0 2px 0 ${GAME.primaryPressed}`,
-              }}
-            >
-              <CalendarCheck size={14} />
-              去签到
-            </button>
+            {hasSignedToday ? (
+              <button
+                disabled
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-pill text-caption font-bold flex-shrink-0 cursor-not-allowed"
+                style={{
+                  background: isDark ? GAME.primarySoftDark : GAME.primarySoft,
+                  color: GAME.primary,
+                }}
+              >
+                <Check size={14} />
+                已签到
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  if (!user) { navigate("/login"); return; }
+                  if (user.isRealName) setShowSignIn(true); else setShowRealName(true);
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-pill text-caption font-bold flex-shrink-0 text-white shadow-sm active:scale-95 transition-all"
+                style={{
+                  background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})`,
+                  boxShadow: `0 2px 0 ${GAME.primaryPressed}`,
+                }}
+              >
+                <CalendarCheck size={14} />
+                去签到
+              </button>
+            )}
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mt-4">
-            {CHECK_IN_REWARDS.map((reward, i) => {
+          <div className="grid grid-cols-5 gap-1 mt-4">
+            {Array.from({ length: SIGN_IN_REWARD_CAP_DAYS }, (_, i) => {
               const day = i + 1;
-              const isDone = day <= consecutiveDays;
-              const isNext = day === nextRewardDay;
+              const isDone = day <= signInStreak;
+              const isNext = day === nextRewardDay && !isDone;
+              const reward = getSignInReward(day, isChangGong);
               return (
                 <div key={day} className="flex flex-col items-center gap-1">
                   <div
@@ -331,7 +362,7 @@ export default function HomePage() {
                       boxShadow: isNext ? `0 0 0 2px ${GAME.primary}` : undefined,
                     }}
                   >
-                    {isDone ? <Check size={16} /> : `+${reward}`}
+                    {isDone ? <Check size={16} /> : `+${formatReward(reward)}`}
                   </div>
                   <span className={`text-caption ${inkTer}`}>第{day}天</span>
                 </div>

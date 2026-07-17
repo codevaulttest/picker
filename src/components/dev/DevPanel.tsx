@@ -25,6 +25,21 @@ export default function DevPanel() {
     toast({ title: on ? "已切换为已实名" : "已切换为未实名" });
   };
 
+  const handleResetTodayCheckIn = () => {
+    if (!user) return;
+    const updated = {
+      ...user,
+      lastCheckInDate: null,
+      signInStreak: 0,
+      pendingSignInReward: 0,
+      pendingSignInRewardDate: null,
+      penaltyAppliedDates: [],
+    };
+    setUser(updated);
+    localStorage.setItem("pke_mock_profile_" + user.pkeId, JSON.stringify(updated));
+    toast({ title: "已重置签到状态（未签到 / 连续天数清零）" });
+  };
+
   const handleLoginChange = async (on: boolean) => {
     if (!on) {
       if (user) upsertAccount(user);
@@ -93,6 +108,15 @@ export default function DevPanel() {
               aria-label="实名认证状态"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={handleResetTodayCheckIn}
+            disabled={!user}
+            className="w-full mb-3 h-8 rounded-button text-caption font-bold text-game-primary bg-game-primary-soft active:opacity-70 disabled:opacity-40"
+          >
+            重置签到状态（演示未签到态）
+          </button>
 
           <button
             type="button"

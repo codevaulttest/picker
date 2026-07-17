@@ -18,6 +18,8 @@ interface Props {
 export default function SignInDialog({ open, onClose }: Props) {
   const { toast } = useToast();
   const user = useStore((s) => s.user);
+  const setUser = useStore((s) => s.setUser);
+  const setAssets = useStore((s) => s.setAssets);
   const isDark = useStore((s) => s.isDark);
 
   const [reminder, setReminder] = useState(
@@ -34,8 +36,15 @@ export default function SignInDialog({ open, onClose }: Props) {
 
   const signInMutation = useMutation({
     mutationFn: (vars: { pkeId: string }) => signIn(vars.pkeId),
-    onSuccess: () => {
-      toast({ title: TEXT.home.signInNow + "成功", description: "获得1PB奖励" });
+    onSuccess: (data) => {
+      if (data.profile) {
+        setUser(data.profile);
+        if (data.profile.assets) setAssets(data.profile.assets);
+      }
+      if (!data.alreadySigned) {
+        const rewardStr = Number.isInteger(data.reward) ? String(data.reward) : data.reward.toFixed(1);
+        toast({ title: TEXT.home.signInNow + "成功", description: `${rewardStr}P币将于明日发放` });
+      }
       onClose();
     },
   });

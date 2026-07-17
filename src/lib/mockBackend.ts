@@ -86,9 +86,84 @@ function saveProfile(profile: UserProfile) {
   localStorage.setItem(profileKey(profile.pkeId), JSON.stringify(profile));
 }
 
+function toDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function addDays(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  return toDateStr(dt);
+}
+
 // ═══════════════════════════════════════════════════════════
 // user
 // ═══════════════════════════════════════════════════════════
+
+/** 老 localStorage 里的 profile 可能没有新字段，读出来时补齐默认值 */
+function migrateProfile(profile: UserProfile): UserProfile {
+  return {
+    ...profile,
+    lastCheckInDate: profile.lastCheckInDate ?? null,
+    signInStreak: profile.signInStreak ?? 0,
+    pendingSignInReward: profile.pendingSignInReward ?? 0,
+    pendingSignInRewardDate: profile.pendingSignInRewardDate ?? null,
+    penaltyAppliedDates: profile.penaltyAppliedDates ?? [],
+  };
+}
+
+// 签到奖励：第N天=N P币（贫农及以上等级），长工等级减半，每日最高10P币
+export const SIGN_IN_REWARD_CAP_DAYS = 10;
+// 未签到次日倒扣：断1天扣10，断2天扣20，断3天及以上封顶扣40
+const SIGN_IN_PENALTY_SCHEDULE = [10, 20, 40];
+
+export function getSignInReward(streakDay: number, isChangGong: boolean): number {
+  const base = Math.min(streakDay, SIGN_IN_REWARD_CAP_DAYS);
+  return isChangGong ? base / 2 : base;
+}
+
+function penaltyForMissedIndex(i: number): number {
+  return SIGN_IN_PENALTY_SCHEDULE[Math.min(i, SIGN_IN_PENALTY_SCHEDULE.length - 1)];
+}
+
+/**
+ * 每次读取/写入签到状态前结算：
+ * 1) 昨天及更早签到赚的奖励，今天才到账（次日发放）
+ * 2) 上次签到之后到昨天之间，每个尚未扣过款的日期按断签天数递增倒扣，并把连续签到重置为0
+ */
+function settleSignIn(profile: UserProfile): UserProfile {
+  const today = toDateStr(new Date());
+
+  if (profile.pendingSignInReward > 0 && profile.pendingSignInRewardDate && profile.pendingSignInRewardDate !== today) {
+    if (profile.assets) profile.assets.pb += profile.pendingSignInReward;
+    profile.pendingSignInReward = 0;
+    profile.pendingSignInRewardDate = null;
+  }
+
+  if (profile.lastCheckInDate) {
+    const penalized = new Set(profile.penaltyAppliedDates);
+    let cursor = addDays(profile.lastCheckInDate, 1);
+    let missedIndex = 0;
+    let brokeStreak = false;
+    while (cursor < today) {
+      if (!penalized.has(cursor)) {
+        const penalty = penaltyForMissedIndex(missedIndex);
+        if (profile.assets) profile.assets.pb = Math.max(0, profile.assets.pb - penalty);
+        penalized.add(cursor);
+        brokeStreak = true;
+      }
+      missedIndex += 1;
+      cursor = addDays(cursor, 1);
+    }
+    if (brokeStreak) {
+      profile.signInStreak = 0;
+      profile.penaltyAppliedDates = Array.from(penalized).slice(-30);
+    }
+  }
+
+  return profile;
+}
 
 export async function registerUser(name: string) {
   const userId = Date.now();
@@ -107,6 +182,11 @@ export async function registerUser(name: string) {
     name,
     avatar: "",
     consecutiveClockInDays: 0,
+    lastCheckInDate: null,
+    signInStreak: 0,
+    pendingSignInReward: 0,
+    pendingSignInRewardDate: null,
+    penaltyAppliedDates: [],
     assets: { ...defaultAssets },
   };
   saveProfile(profile);
@@ -114,17 +194,34 @@ export async function registerUser(name: string) {
 }
 
 export async function getUserProfile(pkeId: string): Promise<UserProfile | null> {
-  return loadProfile(pkeId);
+  const profile = loadProfile(pkeId);
+  if (!profile) return null;
+  const settled = settleSignIn(migrateProfile(profile));
+  saveProfile(settled);
+  return settled;
 }
 
 export async function signIn(pkeId: string) {
-  const profile = loadProfile(pkeId);
-  if (profile) {
-    profile.consecutiveClockInDays += 1;
-    if (profile.assets) profile.assets.pb += 1;
+  const loaded = loadProfile(pkeId);
+  if (!loaded) return { reward: 0, alreadySigned: false, profile: null };
+
+  const profile = settleSignIn(migrateProfile(loaded));
+  const today = toDateStr(new Date());
+  if (profile.lastCheckInDate === today) {
     saveProfile(profile);
+    return { reward: 0, alreadySigned: true, profile };
   }
-  return { reward: 1 };
+
+  const newStreak = profile.signInStreak + 1;
+  const isChangGong = profile.level === 1;
+  const reward = getSignInReward(newStreak, isChangGong);
+
+  profile.signInStreak = newStreak;
+  profile.lastCheckInDate = today;
+  profile.pendingSignInReward = reward;
+  profile.pendingSignInRewardDate = today;
+  saveProfile(profile);
+  return { reward, alreadySigned: false, profile };
 }
 
 // ═══════════════════════════════════════════════════════════
