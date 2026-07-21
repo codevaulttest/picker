@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
-import { Info, Wallet, ChevronRight, Check, LineChart, CalendarCheck, ScanLine, Image } from "lucide-react";
+import { Info, Wallet, ChevronRight, Check, LineChart, CalendarCheck, ScanLine, Image, BadgeCheck } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getUserProfile, registerUser, getSignInReward, SIGN_IN_REWARD_CAP_DAYS } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
@@ -192,7 +192,7 @@ export default function HomePage() {
         if (miniProgramOpen && !(e.target as HTMLElement).closest("[data-pull-panel]")) closeMiniProgramPanel();
       }}
     >
-      <SignInDialog open={showSignIn} onClose={() => setShowSignIn(false)} />
+      <SignInDialog open={showSignIn} reward={nextReward} onClose={() => setShowSignIn(false)} />
       <RealNameDialog open={showRealName} onComplete={() => { setShowRealName(false); if (user) setUser({ ...user, isRealName: true } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
       <CheckInRulesDialog open={showCheckInRules} onClose={() => setShowCheckInRules(false)} />
 
@@ -254,25 +254,51 @@ export default function HomePage() {
       {/* Top HUD：左「我的」/ 右「扫一扫」 */}
       <div className="mx-3.5 h-[52px] flex items-center justify-between flex-shrink-0">
         {user ? (
-          <button
-            type="button"
-            onClick={() => navigate("/settings")}
-            className="flex items-center gap-2.5 min-h-11 active:opacity-80 transition-opacity"
-            aria-label="我的"
-          >
-            <img
-              src={displayAvatar}
-              alt=""
-              className="w-9 h-9 rounded-pill object-cover flex-shrink-0"
-            />
-            <span
-              className="px-2 py-0.5 rounded-badge text-game-primary-text"
-              style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => navigate("/settings")}
+              className="flex items-center gap-2.5 min-h-11 active:opacity-80 transition-opacity min-w-0"
+              aria-label="我的"
             >
-              <span className="text-caption">称号：</span>
-              <span className="text-hud-label">{lvConfig.cnName}</span>
-            </span>
-          </button>
+              <img
+                src={displayAvatar}
+                alt=""
+                className="w-9 h-9 rounded-pill object-cover flex-shrink-0"
+              />
+              <span
+                className="px-2 py-0.5 rounded-badge text-game-primary-text flex-shrink-0"
+                style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
+              >
+                <span className="text-caption">称号：</span>
+                <span className="text-hud-label">{lvConfig.cnName}</span>
+              </span>
+            </button>
+            {user.isRealName ? (
+              <BadgeCheck
+                size={18}
+                className="flex-shrink-0"
+                style={{ color: GAME.primary }}
+                fill={GAME.primary}
+                stroke={GAME.onPrimary}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowRealName(true)}
+                className="flex items-center justify-center min-h-11 min-w-11 -m-2.5 flex-shrink-0 active:opacity-70 transition-opacity"
+                aria-label="去实名认证"
+              >
+                <BadgeCheck
+                  size={18}
+                  className="flex-shrink-0"
+                  style={{ color: isDark ? GAME.inkDisabledDark : GAME.inkDisabled }}
+                  fill="transparent"
+                  stroke={isDark ? GAME.inkDisabledDark : GAME.inkDisabled}
+                />
+              </button>
+            )}
+          </div>
         ) : (
           <button
             type="button"

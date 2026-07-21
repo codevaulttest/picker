@@ -14,10 +14,12 @@ interface Props {
   value: CountryCode;
   onSelect: (code: CountryCode) => void;
   onClose: () => void;
+  /** 是否显示国际区号（手机号场景需要，纯地区选择场景可关闭） */
+  showDial?: boolean;
 }
 
 /** 国家/地区选择——独立全屏列表页（业内标准形态），支持搜索，而非下拉菜单 */
-export default function CountryCodeSheet({ open, value, onSelect, onClose }: Props) {
+export default function CountryCodeSheet({ open, value, onSelect, onClose, showDial = true }: Props) {
   const isDark = useStore((s) => s.isDark);
   const lang = useStore((s) => s.lang);
   const zh = lang !== "en";
@@ -106,7 +108,7 @@ export default function CountryCodeSheet({ open, value, onSelect, onClose }: Pro
                   <span className={`flex-1 min-w-0 truncate text-grid-label ${ink}`}>
                     {zh ? c.name : c.nameEn}
                   </span>
-                  <span className={`text-body ${inkSec}`}>+{c.dial}</span>
+                  {showDial && <span className={`text-body ${inkSec}`}>+{c.dial}</span>}
                   {active && (
                     <Check size={18} className="shrink-0" style={{ color: GAME.primary }} />
                   )}

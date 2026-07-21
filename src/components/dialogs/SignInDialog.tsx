@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -12,10 +13,11 @@ const CHECKIN_REMINDER_KEY = "pke_checkin_reminder";
 
 interface Props {
   open: boolean;
+  reward: number;
   onClose: () => void;
 }
 
-export default function SignInDialog({ open, onClose }: Props) {
+export default function SignInDialog({ open, reward, onClose }: Props) {
   const { toast } = useToast();
   const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
@@ -58,13 +60,23 @@ export default function SignInDialog({ open, onClose }: Props) {
               isDark ? "bg-game-primary-soft-dark" : "bg-game-primary-soft"
             }`}
           >
-            <img src="/icons/early-rise.png" alt="signin" className="w-10 h-10" />
+            <CalendarCheck size={32} className="text-game-primary" strokeWidth={2} />
           </div>
           <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>
             {TEXT.home.dailySignIn}
           </h3>
           <p className={`text-sm mb-4 ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
-            {user?.isRealName ? TEXT.home.signInReward : TEXT.clockIn.early.rules[0]}
+            {user?.isRealName ? (
+              <>
+                点击签到领取
+                <span className="font-bold text-game-primary tabular-nums">
+                  {" "}{Number.isInteger(reward) ? reward : reward.toFixed(1)}{" "}
+                </span>
+                P币
+              </>
+            ) : (
+              TEXT.clockIn.early.rules[0]
+            )}
           </p>
           <div
             className={`flex items-center justify-between rounded-xl px-4 py-3 mb-4 ${
