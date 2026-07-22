@@ -374,7 +374,7 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mt-4">
+          <div className="grid grid-cols-5 gap-1 mt-4">
             {Array.from({ length: SIGN_IN_REWARD_CAP_DAYS }, (_, i) => {
               const day = i + 1;
               const isDone = day <= signInStreak;
@@ -406,7 +406,9 @@ export default function HomePage() {
                   >
                     {isDone ? <Check size={16} /> : `+${formatReward(reward)}`}
                   </div>
-                  <span className={`text-caption ${inkTer}`}>第{day}天</span>
+                  <span className={`text-caption ${inkTer}`}>
+                    第{day}天{day === SIGN_IN_REWARD_CAP_DAYS ? "起" : ""}
+                  </span>
                 </div>
               );
             })}

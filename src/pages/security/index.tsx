@@ -25,9 +25,13 @@ import {
 import EmailBindDialog from "@/components/dialogs/EmailBindDialog";
 import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
+import VerifyIdentityDialog from "@/components/dialogs/VerifyIdentityDialog";
+import FaceLoginConsentDialog from "@/components/dialogs/FaceLoginConsentDialog";
+import { updateUserProfile } from "@/lib/mockBackend";
 
 const VAULT_PAY_KEY = "pke_vault_auth_pay";
 const VAULT_ACCOUNT_KEY = "pke_vault_account";
+const FACE_LOGIN_KEY = "pke_face_login";
 
 /** 生成 8 位 CodeVAULT 账号（首位非 0），仅在首次开启授权时创建一次并持久化 */
 function generateVaultAccount(): string {
@@ -83,6 +87,13 @@ export default function SecurityPage() {
   const [showPhoneBind, setShowPhoneBind] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [faceLogin, setFaceLogin] = useState(
+    () =>
+      typeof localStorage !== "undefined" &&
+      localStorage.getItem(FACE_LOGIN_KEY) === "1"
+  );
+  const [showFaceLoginConsent, setShowFaceLoginConsent] = useState(false);
+  const [showVerifyIdentity, setShowVerifyIdentity] = useState(false);
 
   const softCard = isDark
     ? "bg-game-bg-card-dark shadow-warm-dark"
@@ -97,10 +108,27 @@ export default function SecurityPage() {
     localStorage.removeItem("pke_nickname");
     localStorage.removeItem(VAULT_PAY_KEY);
     localStorage.removeItem(VAULT_ACCOUNT_KEY);
+    localStorage.removeItem(FACE_LOGIN_KEY);
     setUser(null);
     setShowLogoutConfirm(false);
     toast({ title: t.settings.loggedOut });
     navigate("/settings", { replace: true });
+  };
+
+  const handleFaceLoginToggle = (on: boolean) => {
+    if (on) {
+      setShowFaceLoginConsent(true);
+      return;
+    }
+    setFaceLogin(false);
+    localStorage.setItem(FACE_LOGIN_KEY, "0");
+    toast({ title: "已关闭面容登录" });
+  };
+
+  const handleFaceLoginVerified = () => {
+    setFaceLogin(true);
+    localStorage.setItem(FACE_LOGIN_KEY, "1");
+    toast({ title: "已开启面容登录" });
   };
 
   const handleVaultPay = (on: boolean) => {
@@ -151,6 +179,33 @@ export default function SecurityPage() {
             const isRealname = item.key === "realname";
             const isEmail = item.key === "email";
             const isPhone = item.key === "phone";
+            const isFaceLogin = item.key === "face-login";
+
+            if (isFaceLogin) {
+              return (
+                <div
+                  key={item.key}
+                  className="w-full flex items-center gap-3 px-4 py-3"
+                  style={hairline(isDark, true)}
+                >
+                  <div
+                    className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
+                    style={{ background: iconBg }}
+                  >
+                    <Icon size={20} style={{ color: item.color }} />
+                  </div>
+                  <span className={`flex-1 text-grid-label truncate ${ink}`}>
+                    {item.label}
+                  </span>
+                  <Switch
+                    checked={faceLogin}
+                    onCheckedChange={handleFaceLoginToggle}
+                    aria-label={item.label}
+                  />
+                </div>
+              );
+            }
+
             const status = isRealname
               ? user?.isRealName
                 ? "已认证"
@@ -286,7 +341,10 @@ export default function SecurityPage() {
         email={user?.email}
         onClose={() => setShowEmailBind(false)}
         onComplete={(email) => {
-          if (user) setUser({ ...user, email } as any);
+          if (user) {
+            setUser({ ...user, email } as any);
+            updateUserProfile(user.pkeId, { email });
+          }
         }}
       />
 
@@ -295,8 +353,29 @@ export default function SecurityPage() {
         phone={user?.phone}
         onClose={() => setShowPhoneBind(false)}
         onComplete={(phone) => {
-          if (user) setUser({ ...user, phone } as any);
+          if (user) {
+            setUser({ ...user, phone } as any);
+            updateUserProfile(user.pkeId, { phone });
+          }
         }}
+      />
+
+      <FaceLoginConsentDialog
+        open={showFaceLoginConsent}
+        onClose={() => setShowFaceLoginConsent(false)}
+        onAgree={() => {
+          setShowFaceLoginConsent(false);
+          setShowVerifyIdentity(true);
+        }}
+      />
+
+      <VerifyIdentityDialog
+        open={showVerifyIdentity}
+        title="验证身份"
+        email={user?.email}
+        phone={user?.phone}
+        onClose={() => setShowVerifyIdentity(false)}
+        onVerified={handleFaceLoginVerified}
       />
 
       <RealNameDialog
