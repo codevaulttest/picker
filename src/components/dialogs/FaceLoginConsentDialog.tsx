@@ -18,6 +18,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onAgree: () => void;
+  title?: string;
+  description?: string;
+  policyTitle?: string;
+  policyParagraphs?: string[];
 }
 
 const FACE_ID_POLICY = [
@@ -36,7 +40,15 @@ const CTA_STYLE = {
   color: GAME.onPrimary,
 } as const;
 
-export default function FaceLoginConsentDialog({ open, onClose, onAgree }: Props) {
+export default function FaceLoginConsentDialog({
+  open,
+  onClose,
+  onAgree,
+  title = "开启面容登录",
+  description = "开启后可使用面容快速登录，无需每次输入密码",
+  policyTitle = "面容 ID 服务协议",
+  policyParagraphs = FACE_ID_POLICY,
+}: Props) {
   const isDark = useStore((s) => s.isDark);
   const [agreed, setAgreed] = useState(false);
   const [showFaceIdPolicy, setShowFaceIdPolicy] = useState(false);
@@ -57,15 +69,13 @@ export default function FaceLoginConsentDialog({ open, onClose, onAgree }: Props
         <DialogContent className={isDark ? "bg-game-bg-card-dark" : undefined} showCloseButton>
           <DialogHeader>
             <div
-              className="w-12 h-12 rounded-button flex items-center justify-center"
+              className="w-16 h-16 rounded-button flex items-center justify-center mx-auto"
               style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
             >
-              <ScanFace size={24} style={{ color: GAME.primary }} />
+              <ScanFace size={32} style={{ color: GAME.primary }} />
             </div>
-            <DialogTitle>开启面容登录</DialogTitle>
-            <DialogDescription>
-              开启后可使用面容快速登录，无需每次输入密码
-            </DialogDescription>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
 
           <label className="flex items-start gap-2 cursor-pointer select-none">
@@ -85,7 +95,7 @@ export default function FaceLoginConsentDialog({ open, onClose, onAgree }: Props
                 className="font-medium"
                 style={{ color: GAME.primaryText }}
               >
-                《面容 ID 服务协议》
+                《{policyTitle}》
               </button>
               和
               <button
@@ -126,8 +136,8 @@ export default function FaceLoginConsentDialog({ open, onClose, onAgree }: Props
 
       <PolicyDialog
         open={showFaceIdPolicy}
-        title="面容 ID 服务协议"
-        paragraphs={FACE_ID_POLICY}
+        title={policyTitle}
+        paragraphs={policyParagraphs}
         onClose={() => setShowFaceIdPolicy(false)}
       />
       <PolicyDialog

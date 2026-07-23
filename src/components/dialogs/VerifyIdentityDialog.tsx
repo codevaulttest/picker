@@ -19,16 +19,18 @@ import { useToast } from "@/hooks/use-toast";
 import { GAME } from "@/config/app.config";
 import { maskPhone } from "@/lib/phoneCountries";
 
+type Method = "password" | "email" | "phone";
+
 interface Props {
   open: boolean;
   title?: string;
   email?: string | null;
   phone?: string | null;
+  /** 限定可用的验证方式；缺省时按可用联系方式自动展示邮箱/短信/登录密码 */
+  methods?: Method[];
   onClose: () => void;
   onVerified: () => void;
 }
-
-type Method = "password" | "email" | "phone";
 
 // 演示用固定登录密码/验证码：真实后端接入后由服务端下发校验
 const MOCK_PASSWORD = "123456";
@@ -53,6 +55,7 @@ export default function VerifyIdentityDialog({
   title,
   email,
   phone,
+  methods,
   onClose,
   onVerified,
 }: Props) {
@@ -61,7 +64,15 @@ export default function VerifyIdentityDialog({
   const { toast } = useToast();
   const zh = lang !== "en";
 
-  const defaultMethod: Method = email ? "email" : phone ? "phone" : "password";
+  const allowMethod = (m: Method) => !methods || methods.includes(m);
+  const defaultMethod: Method =
+    allowMethod("email") && email
+      ? "email"
+      : allowMethod("phone") && phone
+        ? "phone"
+        : allowMethod("password")
+          ? "password"
+          : "email";
   const [method, setMethod] = useState<Method>(defaultMethod);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -198,7 +209,7 @@ export default function VerifyIdentityDialog({
     { key: "email", label: zh ? "邮箱验证码" : "Email code", available: !!email },
     { key: "phone", label: zh ? "短信验证码" : "SMS code", available: !!phone },
     { key: "password", label: zh ? "登录密码" : "Login password", available: true },
-  ].filter((m) => m.available);
+  ].filter((m) => m.available && allowMethod(m.key));
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>

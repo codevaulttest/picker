@@ -27,11 +27,18 @@ import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
 import VerifyIdentityDialog from "@/components/dialogs/VerifyIdentityDialog";
 import FaceLoginConsentDialog from "@/components/dialogs/FaceLoginConsentDialog";
+import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 import { updateUserProfile } from "@/lib/mockBackend";
 
 const VAULT_PAY_KEY = "pke_vault_auth_pay";
 const VAULT_ACCOUNT_KEY = "pke_vault_account";
 const FACE_LOGIN_KEY = "pke_face_login";
+const FACE_PAY_KEY = "pke_face_pay";
+
+const FACE_PAY_POLICY = [
+  "《面容支付服务协议》用于说明 P客如何使用您的面部特征数据完成支付身份核验，包括数据采集范围、加密存储方式、保存期限以及您可以随时关闭该功能并删除相关数据的权利。",
+  "面容特征数据仅用于本机支付身份核验，不会用于其他用途，也不会被上传至与支付无关的第三方服务。",
+];
 
 /** 生成 8 位 CodeVAULT 账号（首位非 0），仅在首次开启授权时创建一次并持久化 */
 function generateVaultAccount(): string {
@@ -94,6 +101,15 @@ export default function SecurityPage() {
   );
   const [showFaceLoginConsent, setShowFaceLoginConsent] = useState(false);
   const [showVerifyIdentity, setShowVerifyIdentity] = useState(false);
+  const [facePay, setFacePay] = useState(
+    () =>
+      typeof localStorage !== "undefined" &&
+      localStorage.getItem(FACE_PAY_KEY) === "1"
+  );
+  const [showFacePayConsent, setShowFacePayConsent] = useState(false);
+  const [showFacePayVerify, setShowFacePayVerify] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [offConfirmTarget, setOffConfirmTarget] = useState<"face-login" | "face-pay" | null>(null);
 
   const softCard = isDark
     ? "bg-game-bg-card-dark shadow-warm-dark"
@@ -117,18 +133,62 @@ export default function SecurityPage() {
 
   const handleFaceLoginToggle = (on: boolean) => {
     if (on) {
+      if (!user?.email) {
+        toast({ title: "请先绑定邮箱后再开启面容登录", variant: "info" });
+        setShowEmailBind(true);
+        return;
+      }
       setShowFaceLoginConsent(true);
       return;
     }
-    setFaceLogin(false);
-    localStorage.setItem(FACE_LOGIN_KEY, "0");
-    toast({ title: "已关闭面容登录" });
+    setOffConfirmTarget("face-login");
   };
 
   const handleFaceLoginVerified = () => {
     setFaceLogin(true);
     localStorage.setItem(FACE_LOGIN_KEY, "1");
     toast({ title: "已开启面容登录" });
+  };
+
+  const handleFacePayToggle = (on: boolean) => {
+    if (on) {
+      if (!user?.email) {
+        toast({ title: "请先绑定邮箱后再开启面容支付", variant: "info" });
+        setShowEmailBind(true);
+        return;
+      }
+      setShowFacePayConsent(true);
+      return;
+    }
+    setOffConfirmTarget("face-pay");
+  };
+
+  const handleConfirmDisable = () => {
+    if (offConfirmTarget === "face-login") {
+      setFaceLogin(false);
+      localStorage.setItem(FACE_LOGIN_KEY, "0");
+      toast({ title: "已关闭面容登录" });
+    } else if (offConfirmTarget === "face-pay") {
+      setFacePay(false);
+      localStorage.setItem(FACE_PAY_KEY, "0");
+      toast({ title: "已关闭面容支付" });
+    }
+    setOffConfirmTarget(null);
+  };
+
+  const handleFacePayVerified = () => {
+    setFacePay(true);
+    localStorage.setItem(FACE_PAY_KEY, "1");
+    toast({ title: "已开启面容支付" });
+  };
+
+  const handleChangePasswordClick = () => {
+    if (!user?.email) {
+      toast({ title: "请先绑定邮箱后再修改密码", variant: "info" });
+      setShowEmailBind(true);
+      return;
+    }
+    setShowChangePassword(true);
   };
 
   const handleVaultPay = (on: boolean) => {
@@ -179,9 +239,11 @@ export default function SecurityPage() {
             const isRealname = item.key === "realname";
             const isEmail = item.key === "email";
             const isPhone = item.key === "phone";
+            const isPassword = item.key === "password";
             const isFaceLogin = item.key === "face-login";
+            const isFacePay = item.key === "face-pay";
 
-            if (isFaceLogin) {
+            if (isFaceLogin || isFacePay) {
               return (
                 <div
                   key={item.key}
@@ -198,8 +260,8 @@ export default function SecurityPage() {
                     {item.label}
                   </span>
                   <Switch
-                    checked={faceLogin}
-                    onCheckedChange={handleFaceLoginToggle}
+                    checked={isFaceLogin ? faceLogin : facePay}
+                    onCheckedChange={isFaceLogin ? handleFaceLoginToggle : handleFacePayToggle}
                     aria-label={item.label}
                   />
                 </div>
@@ -244,7 +306,9 @@ export default function SecurityPage() {
                       ? () => setShowEmailBind(true)
                       : isPhone
                         ? () => setShowPhoneBind(true)
-                        : undefined
+                        : isPassword
+                          ? handleChangePasswordClick
+                          : undefined
                 }
                 className={`w-full flex items-center gap-3 px-4 text-left transition-colors min-h-14 ${rowPress(isDark)}`}
                 style={hairline(isDark, true)}
@@ -374,8 +438,39 @@ export default function SecurityPage() {
         title="验证身份"
         email={user?.email}
         phone={user?.phone}
+        methods={["email"]}
         onClose={() => setShowVerifyIdentity(false)}
         onVerified={handleFaceLoginVerified}
+      />
+
+      <FaceLoginConsentDialog
+        open={showFacePayConsent}
+        title="开启面容支付"
+        description="开启后可使用面容快速验证并完成支付，无需重复输入支付密码"
+        policyTitle="面容支付服务协议"
+        policyParagraphs={FACE_PAY_POLICY}
+        onClose={() => setShowFacePayConsent(false)}
+        onAgree={() => {
+          setShowFacePayConsent(false);
+          setShowFacePayVerify(true);
+        }}
+      />
+
+      <VerifyIdentityDialog
+        open={showFacePayVerify}
+        title="验证身份"
+        email={user?.email}
+        phone={user?.phone}
+        methods={["email"]}
+        onClose={() => setShowFacePayVerify(false)}
+        onVerified={handleFacePayVerified}
+      />
+
+      <ChangePasswordDialog
+        open={showChangePassword}
+        email={user?.email}
+        onClose={() => setShowChangePassword(false)}
+        onComplete={() => {}}
       />
 
       <RealNameDialog
@@ -408,6 +503,35 @@ export default function SecurityPage() {
               onClick={handleLogout}
             >
               {t.settings.logout}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!offConfirmTarget} onOpenChange={(v) => !v && setOffConfirmTarget(null)}>
+        <AlertDialogContent
+          className={`rounded-card border-0 ${isDark ? "bg-game-bg-card-dark" : "bg-game-bg-card"}`}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className={ink}>
+              {offConfirmTarget === "face-login" ? "关闭面容登录" : "关闭面容支付"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className={inkSec}>
+              {offConfirmTarget === "face-login"
+                ? "关闭后将无法使用面容快速登录，需重新开启并完成身份验证"
+                : "关闭后将无法使用面容快速完成支付，需重新开启并完成身份验证"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row justify-end gap-2">
+            <AlertDialogCancel className="mt-0 flex-1 rounded-button border-0 sm:flex-initial">
+              {t.settings.cancel}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 rounded-button border-0 sm:flex-initial"
+              style={{ background: GAME.error, color: GAME.onPrimary }}
+              onClick={handleConfirmDisable}
+            >
+              关闭
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

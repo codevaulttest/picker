@@ -20,6 +20,9 @@ function toDateStr(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+// 自动弹签到弹窗：每天只弹一次，弹出日期落地在此 key
+const CHECKIN_POPUP_SHOWN_KEY = "pke_checkin_popup_shown_date";
+
 // 下拉唤出小程序面板：拖拽阻尼系数 / 开合阈值（展开高度按视口 80% 动态计算，见 PULL_MAX）
 const PULL_RESISTANCE = 0.55;
 const PULL_THRESHOLD = 64;
@@ -153,6 +156,20 @@ export default function HomePage() {
   const isChangGong = (user?.level ?? 1) === 1;
   const signInStreak = user?.signInStreak ?? 0;
   const hasSignedToday = !!user?.lastCheckInDate && user.lastCheckInDate === toDateStr(new Date());
+
+  // 自动弹签到弹窗：需已登录+已实名+今日未签到+今天还没弹过+当前没有其他弹窗/面板挡着
+  useEffect(() => {
+    if (!user || !user.isRealName || hasSignedToday) return;
+    if (showSignIn || showRealName || showCheckInRules || miniProgramOpen) return;
+    if (typeof localStorage === "undefined") return;
+    const today = toDateStr(new Date());
+    if (localStorage.getItem(CHECKIN_POPUP_SHOWN_KEY) === today) return;
+    const timer = setTimeout(() => {
+      localStorage.setItem(CHECKIN_POPUP_SHOWN_KEY, today);
+      setShowSignIn(true);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [user, hasSignedToday, showSignIn, showRealName, showCheckInRules, miniProgramOpen]);
   const nextRewardDay = Math.min(signInStreak + 1, SIGN_IN_REWARD_CAP_DAYS);
   const nextReward = getSignInReward(nextRewardDay, isChangGong);
   const level = user?.level || 1;
@@ -332,7 +349,7 @@ export default function HomePage() {
               <img src="/icons/checkin-gift.png" alt="" className="w-8 h-8 object-contain" />
             </div>
             <p className={`flex-1 text-body ${inkSec} flex items-center gap-1`}>
-              连续签到 <span className="font-bold text-game-primary tabular-nums">{nextRewardDay}</span> 天可得{" "}
+              连续签到第 <span className="font-bold text-game-primary tabular-nums">{nextRewardDay}</span> 天，今日可领{" "}
               <span className="font-bold text-game-primary tabular-nums">{formatReward(nextReward)}</span> P币
               <button
                 type="button"
@@ -406,7 +423,7 @@ export default function HomePage() {
                     {isDone ? <Check size={16} /> : `+${formatReward(reward)}`}
                   </div>
                   <span className={`text-caption ${inkTer}`}>
-                    第{day}天{day === SIGN_IN_REWARD_CAP_DAYS ? "起" : ""}
+                    第{day}天
                   </span>
                 </div>
               );
