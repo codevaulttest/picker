@@ -243,7 +243,6 @@ export default function HomePage() {
                     <Image size={18} strokeWidth={1.75} className={inkTer} />
                   </div>
                   <p className={`text-grid-label mt-1.5 truncate w-full px-1 ${ink}`}>{app.name}</p>
-                  <p className={`text-caption mt-0.5 truncate w-full px-1 ${inkTer}`}>{app.desc}</p>
                 </button>
               ))}
             </div>
