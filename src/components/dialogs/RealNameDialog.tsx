@@ -12,9 +12,14 @@ import idCardBackIcon from "@/assets/svg/svg/custom/id-card-back.svg?url";
 import faceScanIcon from "@/assets/svg/svg/custom/face-scan.svg?url";
 import checkSuccessIcon from "@/assets/svg/svg/custom/check-success.svg?url";
 
+export interface RealNameInfo {
+  region: CountryCode;
+  documentType: DocumentType;
+}
+
 interface Props {
   open: boolean;
-  onComplete: () => void;
+  onComplete: (info: RealNameInfo) => void;
   onClose: () => void;
 }
 
@@ -143,7 +148,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
       if (authCode.length === 12) {
         setStep("done");
         setTimeout(() => {
-          onComplete();
+          onComplete({ region: country, documentType });
           reset();
         }, 1500);
       } else {
@@ -168,7 +173,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
     } else if (step === "code") {
       setStep("done");
       setTimeout(() => {
-        onComplete();
+        onComplete({ region: country, documentType });
         reset();
       }, 1500);
     }
@@ -186,7 +191,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
       setPaying(false);
       setStep("done");
       setTimeout(() => {
-        onComplete();
+        onComplete({ region: country, documentType });
         reset();
       }, 1500);
     }, 600);

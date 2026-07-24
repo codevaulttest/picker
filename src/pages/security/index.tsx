@@ -24,11 +24,20 @@ import {
 } from "@/config/app.config";
 import EmailBindDialog from "@/components/dialogs/EmailBindDialog";
 import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
-import RealNameDialog from "@/components/dialogs/RealNameDialog";
+import RealNameDialog, { type RealNameInfo } from "@/components/dialogs/RealNameDialog";
+import RealNameInfoDialog from "@/components/dialogs/RealNameInfoDialog";
 import VerifyIdentityDialog from "@/components/dialogs/VerifyIdentityDialog";
 import FaceLoginConsentDialog from "@/components/dialogs/FaceLoginConsentDialog";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 import { updateUserProfile } from "@/lib/mockBackend";
+import { maskPhone } from "@/lib/phoneCountries";
+
+function maskEmail(email: string): string {
+  const [user, domain] = email.split("@");
+  if (!user || !domain) return email;
+  const visible = user.slice(0, Math.min(2, user.length));
+  return `${visible}${"*".repeat(Math.max(user.length - visible.length, 1))}@${domain}`;
+}
 
 const VAULT_PAY_KEY = "pke_vault_auth_pay";
 const VAULT_ACCOUNT_KEY = "pke_vault_account";
@@ -93,6 +102,8 @@ export default function SecurityPage() {
   const [showEmailBind, setShowEmailBind] = useState(false);
   const [showPhoneBind, setShowPhoneBind] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
+  const [showRealNameInfo, setShowRealNameInfo] = useState(false);
+  const [realNameInfo, setRealNameInfo] = useState<RealNameInfo | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [faceLogin, setFaceLogin] = useState(
     () =>
@@ -109,6 +120,7 @@ export default function SecurityPage() {
   const [showFacePayConsent, setShowFacePayConsent] = useState(false);
   const [showFacePayVerify, setShowFacePayVerify] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangePayPassword, setShowChangePayPassword] = useState(false);
   const [offConfirmTarget, setOffConfirmTarget] = useState<"face-login" | "face-pay" | null>(null);
 
   const softCard = isDark
@@ -191,6 +203,15 @@ export default function SecurityPage() {
     setShowChangePassword(true);
   };
 
+  const handleChangePayPasswordClick = () => {
+    if (!user?.email) {
+      toast({ title: "请先绑定邮箱后再修改支付密码", variant: "info" });
+      setShowEmailBind(true);
+      return;
+    }
+    setShowChangePayPassword(true);
+  };
+
   const handleVaultPay = (on: boolean) => {
     setVaultPay(on);
     localStorage.setItem(VAULT_PAY_KEY, on ? "1" : "0");
@@ -231,140 +252,153 @@ export default function SecurityPage() {
         </div>
       </header>
 
-      <section className="mx-3.5 mt-2.5 flex-shrink-0">
-        <div className={`rounded-card overflow-hidden transition-colors ${softCard}`}>
-          {SECURITY_MENU.map((item) => {
-            const Icon = item.icon;
-            const iconBg = isDark ? softForDark(item.bg) : item.bg;
-            const isRealname = item.key === "realname";
-            const isEmail = item.key === "email";
-            const isPhone = item.key === "phone";
-            const isPassword = item.key === "password";
-            const isFaceLogin = item.key === "face-login";
-            const isFacePay = item.key === "face-pay";
+      {(
+        [
+          { title: "账号绑定", keys: ["phone", "email", "face", "realname"] },
+          { title: "登录安全", keys: ["face-login", "password"] },
+          { title: "支付安全", keys: ["face-pay", "pay-password"] },
+        ] as const
+      ).map((group, groupIndex) => (
+        <section key={group.title} className={`mx-3.5 ${groupIndex === 0 ? "mt-2.5" : "mt-4"} flex-shrink-0`}>
+          <p className={`mb-1.5 px-1 text-caption font-semibold ${inkSec}`}>{group.title}</p>
+          <div className={`rounded-card overflow-hidden transition-colors ${softCard}`}>
+            {SECURITY_MENU.filter((item) => (group.keys as readonly string[]).includes(item.key)).map(
+              (item) => {
+                const Icon = item.icon;
+                const iconBg = isDark ? softForDark(item.bg) : item.bg;
+                const isRealname = item.key === "realname";
+                const isEmail = item.key === "email";
+                const isPhone = item.key === "phone";
+                const isPassword = item.key === "password";
+                const isPayPassword = item.key === "pay-password";
+                const isFaceLogin = item.key === "face-login";
+                const isFacePay = item.key === "face-pay";
 
-            if (isFaceLogin || isFacePay) {
-              return (
-                <div
-                  key={item.key}
-                  className="w-full flex items-center gap-3 px-4 py-3"
-                  style={hairline(isDark, true)}
-                >
-                  <div
-                    className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
-                    style={{ background: iconBg }}
-                  >
-                    <Icon size={20} style={{ color: item.color }} />
-                  </div>
-                  <span className={`flex-1 text-grid-label truncate ${ink}`}>
-                    {item.label}
-                  </span>
-                  <Switch
-                    checked={isFaceLogin ? faceLogin : facePay}
-                    onCheckedChange={isFaceLogin ? handleFaceLoginToggle : handleFacePayToggle}
-                    aria-label={item.label}
-                  />
-                </div>
-              );
-            }
-
-            const status = isRealname
-              ? user?.isRealName
-                ? "已认证"
-                : "去认证"
-              : isEmail
-                ? user?.email
-                  ? "已绑定"
-                  : "未绑定"
-                : isPhone
-                  ? user?.phone
-                    ? "已绑定"
-                    : "未绑定"
-                  : item.status;
-            const tone: SecurityStatusTone | undefined = isRealname
-              ? user?.isRealName
-                ? "success"
-                : "action"
-              : isEmail
-                ? user?.email
-                  ? "success"
-                  : "muted"
-                : isPhone
-                  ? user?.phone
-                    ? "success"
-                    : "muted"
-                  : item.statusTone;
-
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={
-                  isRealname
-                    ? () => setShowRealName(true)
-                    : isEmail
-                      ? () => setShowEmailBind(true)
-                      : isPhone
-                        ? () => setShowPhoneBind(true)
-                        : isPassword
-                          ? handleChangePasswordClick
-                          : undefined
+                if (isFaceLogin || isFacePay) {
+                  return (
+                    <div
+                      key={item.key}
+                      className="w-full flex items-center gap-3 px-4 py-3"
+                      style={hairline(isDark, true)}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
+                        style={{ background: iconBg }}
+                      >
+                        <Icon size={20} style={{ color: item.color }} />
+                      </div>
+                      <span className={`flex-1 text-grid-label truncate ${ink}`}>
+                        {item.label}
+                      </span>
+                      <Switch
+                        checked={isFaceLogin ? faceLogin : facePay}
+                        onCheckedChange={isFaceLogin ? handleFaceLoginToggle : handleFacePayToggle}
+                        aria-label={item.label}
+                      />
+                    </div>
+                  );
                 }
-                className={`w-full flex items-center gap-3 px-4 text-left transition-colors min-h-14 ${rowPress(isDark)}`}
-                style={hairline(isDark, true)}
-              >
+
+                const status = isRealname
+                  ? user?.isRealName
+                    ? "已认证"
+                    : "去认证"
+                  : isEmail
+                    ? user?.email
+                      ? maskEmail(user.email)
+                      : "未绑定"
+                    : isPhone
+                      ? user?.phone
+                        ? maskPhone(user.phone)
+                        : "未绑定"
+                      : item.status;
+                const tone: SecurityStatusTone | undefined = isRealname
+                  ? user?.isRealName
+                    ? "success"
+                    : "action"
+                  : isEmail
+                    ? "muted"
+                    : isPhone
+                      ? "muted"
+                      : item.statusTone;
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={
+                      isRealname
+                        ? () => (user?.isRealName ? setShowRealNameInfo(true) : setShowRealName(true))
+                        : isEmail
+                          ? () => setShowEmailBind(true)
+                          : isPhone
+                            ? () => setShowPhoneBind(true)
+                            : isPassword
+                              ? handleChangePasswordClick
+                              : isPayPassword
+                                ? handleChangePayPasswordClick
+                                : undefined
+                    }
+                    className={`w-full flex items-center gap-3 px-4 text-left transition-colors min-h-14 ${rowPress(isDark)}`}
+                    style={hairline(isDark, true)}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
+                      style={{ background: iconBg }}
+                    >
+                      <Icon size={20} style={{ color: item.color }} />
+                    </div>
+                    <span className={`flex-1 text-grid-label truncate ${ink}`}>
+                      {item.label}
+                    </span>
+                    {status && (
+                      <span
+                        className="text-body flex-shrink-0"
+                        style={{ color: statusColor(tone, isDark) }}
+                      >
+                        {status}
+                      </span>
+                    )}
+                    <ChevronRight size={16} className={inkDis} />
+                  </button>
+                );
+              }
+            )}
+
+            {group.title === "支付安全" && (
+              <div className="w-full flex items-center gap-3 px-4 py-3">
                 <div
                   className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
-                  style={{ background: iconBg }}
+                  style={{
+                    background: isDark ? GAME.primarySoftDark : GAME.primarySoft,
+                  }}
                 >
-                  <Icon size={20} style={{ color: item.color }} />
+                  <KeyRound size={20} style={{ color: GAME.primary }} />
                 </div>
-                <span className={`flex-1 text-grid-label truncate ${ink}`}>
-                  {item.label}
-                </span>
-                {status && (
-                  <span
-                    className="text-body flex-shrink-0"
-                    style={{ color: statusColor(tone, isDark) }}
-                  >
-                    {status}
-                  </span>
-                )}
-                <ChevronRight size={16} className={inkDis} />
-              </button>
-            );
-          })}
-
-          <div
-            className="w-full flex items-center gap-3 px-4 py-3"
-            style={hairline(isDark, true)}
-          >
-            <div
-              className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
-              style={{
-                background: isDark ? GAME.primarySoftDark : GAME.primarySoft,
-              }}
-            >
-              <KeyRound size={20} style={{ color: GAME.primary }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-grid-label truncate ${ink}`}>CodeVAULT 授权支付</p>
-              <p className={`text-body mt-0.5 ${inkSec}`}>
-                由P客与 CodeVAULT 合作提供，开通后，小额交易将直接从您绑定的 CodeVAULT 账号内扣减
-              </p>
-              {vaultPay && vaultAccount && (
-                <p className="text-body mt-0.5" style={{ color: GAME.primaryText }}>
-                  已绑定账号：{vaultAccount}
-                </p>
-              )}
-            </div>
-            <Switch
-              checked={vaultPay}
-              onCheckedChange={handleVaultPay}
-              aria-label="CodeVAULT 授权支付"
-            />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-grid-label truncate ${ink}`}>CodeVAULT 授权支付</p>
+                  <p className={`text-body mt-0.5 ${inkSec}`}>
+                    由P客与 CodeVAULT 合作提供，开通后，小额交易将直接从您绑定的 CodeVAULT 账号内扣减
+                  </p>
+                  {vaultPay && vaultAccount && (
+                    <p className="text-body mt-0.5" style={{ color: GAME.primaryText }}>
+                      已绑定账号：{vaultAccount}
+                    </p>
+                  )}
+                </div>
+                <Switch
+                  checked={vaultPay}
+                  onCheckedChange={handleVaultPay}
+                  aria-label="CodeVAULT 授权支付"
+                />
+              </div>
+            )}
           </div>
+        </section>
+      ))}
 
+      <section className="mx-3.5 mt-4 flex-shrink-0">
+        <div className={`rounded-card overflow-hidden transition-colors ${softCard}`}>
           <button
             type="button"
             onClick={() => navigate("/security/more")}
@@ -473,14 +507,30 @@ export default function SecurityPage() {
         onComplete={() => {}}
       />
 
+      <ChangePasswordDialog
+        open={showChangePayPassword}
+        email={user?.email}
+        kind="payment"
+        onClose={() => setShowChangePayPassword(false)}
+        onComplete={() => {}}
+      />
+
       <RealNameDialog
         open={showRealName}
         onClose={() => setShowRealName(false)}
-        onComplete={() => {
+        onComplete={(info) => {
           setShowRealName(false);
+          setRealNameInfo(info);
           if (user) setUser({ ...user, isRealName: true } as any);
           toast({ title: "实名认证成功" });
         }}
+      />
+
+      <RealNameInfoDialog
+        open={showRealNameInfo}
+        region={realNameInfo?.region}
+        documentType={realNameInfo?.documentType}
+        onClose={() => setShowRealNameInfo(false)}
       />
 
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>

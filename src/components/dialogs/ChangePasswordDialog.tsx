@@ -21,6 +21,8 @@ import { GAME } from "@/config/app.config";
 interface Props {
   open: boolean;
   email?: string | null;
+  /** 修改的密码类型；影响弹窗文案。默认登录密码 */
+  kind?: "login" | "payment";
   onClose: () => void;
   onComplete: () => void;
 }
@@ -45,11 +47,12 @@ function maskEmail(email: string): string {
   return `${visible}${"*".repeat(Math.max(user.length - visible.length, 1))}@${domain}`;
 }
 
-export default function ChangePasswordDialog({ open, email, onClose, onComplete }: Props) {
+export default function ChangePasswordDialog({ open, email, kind = "login", onClose, onComplete }: Props) {
   const isDark = useStore((s) => s.isDark);
   const lang = useStore((s) => s.lang);
   const { toast } = useToast();
   const zh = lang !== "en";
+  const passwordLabel = kind === "payment" ? (zh ? "支付密码" : "payment password") : (zh ? "登录密码" : "login password");
 
   const [step, setStep] = useState<Step>("verify");
   const [sending, setSending] = useState(false);
@@ -155,7 +158,7 @@ export default function ChangePasswordDialog({ open, email, onClose, onComplete 
     setSubmitting(true);
     setTimeout(() => {
       setSubmitting(false);
-      toast({ title: zh ? "登录密码修改成功" : "Password changed" });
+      toast({ title: zh ? `${passwordLabel}修改成功` : "Password changed" });
       onComplete();
       handleClose();
     }, 500);
@@ -253,7 +256,7 @@ export default function ChangePasswordDialog({ open, email, onClose, onComplete 
             <DialogHeader>
               <DialogTitle>{zh ? "设置新密码" : "Set new password"}</DialogTitle>
               <DialogDescription>
-                {zh ? "请设置一个新的登录密码" : "Choose a new login password"}
+                {zh ? `请设置一个新的${passwordLabel}` : `Choose a new ${passwordLabel}`}
               </DialogDescription>
             </DialogHeader>
 
