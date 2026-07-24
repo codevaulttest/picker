@@ -11,6 +11,7 @@ import { useI18n } from "@/hooks/useI18n";
 import SignInDialog from "@/components/dialogs/SignInDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
 import CheckInRulesDialog from "@/components/dialogs/CheckInRulesDialog";
+import checkInGiftIcon from "@/assets/svg/svg/custom/check-in-gift.svg?url";
 
 function formatReward(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
@@ -410,19 +411,14 @@ export default function HomePage() {
         <div className={`p-4 rounded-card transition-colors ${softCard}`}>
           <div className="flex items-center gap-2">
             <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
-              <svg width={44} height={44} viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="5" y="11" width="14" height="10" rx="2" fill={GAME.rewardGold} />
-                <rect x="3" y="8" width="18" height="4" rx="1" fill={GAME.celebrateRed} />
-                <rect x="11" y="8" width="2" height="13" fill={GAME.celebrateRed} />
-                <path
-                  d="M12 8C11 6.6 9.6 4.3 7.8 3.9C6.2 3.5 5 4.6 5 6.1C5 7.5 6.1 8 7.4 8Z"
-                  fill={GAME.celebrateRed}
-                />
-                <path
-                  d="M12 8C13 6.6 14.4 4.3 16.2 3.9C17.8 3.5 19 4.6 19 6.1C19 7.5 17.9 8 16.6 8Z"
-                  fill={GAME.celebrateRed}
-                />
-              </svg>
+              <img
+                src={checkInGiftIcon}
+                alt=""
+                width={44}
+                height={44}
+                draggable={false}
+                className="size-11 select-none"
+              />
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-0.5">
               <p className={`text-caption ${inkSec} whitespace-nowrap`}>

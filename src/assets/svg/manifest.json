@@ -394,11 +394,20 @@
     ]
   },
   {
+    "name": "check-in-gift",
+    "file": "svg/custom/check-in-gift.svg",
+    "source": "custom",
+    "usedIn": [
+      "src/pages/home/index.tsx"
+    ]
+  },
+  {
     "name": "check-success",
     "file": "svg/custom/check-success.svg",
     "source": "custom",
     "usedIn": [
-      "src/components/dialogs/RealNameDialog.tsx"
+      "src/components/dialogs/RealNameDialog.tsx",
+      "src/components/dialogs/FaceScanDialog.tsx"
     ]
   },
   {
@@ -430,7 +439,8 @@
     "file": "svg/custom/face-scan.svg",
     "source": "custom",
     "usedIn": [
-      "src/components/dialogs/RealNameDialog.tsx"
+      "src/components/dialogs/RealNameDialog.tsx",
+      "src/components/dialogs/FaceScanDialog.tsx"
     ]
   },
   {
