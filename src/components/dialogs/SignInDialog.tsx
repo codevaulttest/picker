@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import FaceScanDialog from "@/components/dialogs/FaceScanDialog";
 import { signIn } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { TEXT, GAME } from "@/config/app.config";
+import signInGiftReward from "@/assets/illustrations/signin-gift-reward.webp";
 
 const CHECKIN_REMINDER_KEY = "pke_checkin_reminder";
 
@@ -17,6 +23,10 @@ interface Props {
   reward: number;
   onClose: () => void;
   onGoRealName: () => void;
+}
+
+function formatReward(reward: number) {
+  return Number.isInteger(reward) ? String(reward) : reward.toFixed(1);
 }
 
 export default function SignInDialog({ open, reward, onClose, onGoRealName }: Props) {
@@ -33,6 +43,9 @@ export default function SignInDialog({ open, reward, onClose, onGoRealName }: Pr
   );
   const [showFaceScan, setShowFaceScan] = useState(false);
 
+  const isRealName = Boolean(user?.isRealName);
+  const rewardLabel = formatReward(reward);
+
   const handleReminderChange = (on: boolean) => {
     setReminder(on);
     localStorage.setItem(CHECKIN_REMINDER_KEY, on ? "1" : "0");
@@ -47,7 +60,7 @@ export default function SignInDialog({ open, reward, onClose, onGoRealName }: Pr
         if (data.profile.assets) setAssets(data.profile.assets);
       }
       if (!data.alreadySigned) {
-        const rewardStr = Number.isInteger(data.reward) ? String(data.reward) : data.reward.toFixed(1);
+        const rewardStr = formatReward(data.reward);
         toast({ title: TEXT.home.signInNow + "成功", description: `${rewardStr}P币将于明日发放` });
       }
       onClose();
@@ -56,82 +69,85 @@ export default function SignInDialog({ open, reward, onClose, onGoRealName }: Pr
 
   return (
     <>
-    <Dialog open={open && !showFaceScan} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm border-0 rounded-2xl">
-        <div className="text-center py-4">
+      <Dialog open={open && !showFaceScan} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-sm gap-0 overflow-hidden">
           <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-              isDark ? "bg-game-primary-soft-dark" : "bg-game-primary-soft"
-            }`}
-          >
-            <CalendarCheck size={32} className="text-game-primary" strokeWidth={2} />
-          </div>
-          <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>
-            {TEXT.home.dailySignIn}
-          </h3>
-          {user?.isRealName ? (
-            <div className="mb-4">
-              <p className={`text-sm ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
-                点击签到领取
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-56"
+            style={{
+              background: `linear-gradient(180deg, ${
+                isDark ? GAME.primarySoftDark : GAME.primarySoft
+              } 0%, transparent 100%)`,
+            }}
+          />
+          <div className="relative flex flex-col items-center text-center pt-1 pb-1">
+            <img
+              src={signInGiftReward}
+              alt=""
+              width={238}
+              height={223}
+              draggable={false}
+              className="-mt-1 mb-2 w-[238px] h-auto animate-in zoom-in-95 fade-in-0 object-contain select-none duration-300"
+            />
+
+            <DialogTitle className="mb-3 text-identity-name">{TEXT.home.dailySignIn}</DialogTitle>
+
+            <div className="mb-3 w-full rounded-button bg-game-reward-gold-soft px-4 py-3 dark:bg-game-reward-gold-soft-dark">
+              <p className="text-caption text-game-ink-secondary dark:text-game-ink-secondary-dark">
+                {isRealName ? "今日可领" : "今日可领（认证后领取）"}
               </p>
-              <p className="text-hero-number text-game-primary-text tabular-nums mt-1">
-                +{Number.isInteger(reward) ? reward : reward.toFixed(1)}
-                <span className="text-sm font-normal"> P币</span>
+              <p className="mt-1 text-hero-number text-game-primary-text tabular-nums">
+                +{rewardLabel}
+                <span className="ml-1 text-body text-game-ink dark:text-game-ink-dark">P币</span>
               </p>
             </div>
-          ) : (
-            <p className={`text-sm mb-4 ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
-              {TEXT.home.toRealNameTip}
-            </p>
-          )}
-          <div
-            className={`flex items-center justify-between rounded-xl px-4 py-3 mb-4 ${
-              isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"
-            }`}
-          >
-            <span className={`text-body ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>
-              每日提醒我签到
-            </span>
-            <Switch
-              checked={reminder}
-              onCheckedChange={handleReminderChange}
-              aria-label="每日提醒我签到"
-            />
+
+            <DialogDescription className="sr-only">
+              {isRealName ? "点击签到领取今日奖励" : TEXT.home.toRealNameTip}
+            </DialogDescription>
+
+            <div className="mb-5 flex w-full items-center justify-between gap-3 px-0.5">
+              <span className="text-caption text-game-ink-secondary dark:text-game-ink-secondary-dark">
+                每日提醒我签到
+              </span>
+              <Switch
+                checked={reminder}
+                onCheckedChange={handleReminderChange}
+                aria-label="每日提醒我签到"
+              />
+            </div>
+
+            <DialogFooter className="w-full">
+              {isRealName ? (
+                <Button
+                  className="h-12 rounded-button text-game-on-primary border-0"
+                  style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
+                  onClick={() => setShowFaceScan(true)}
+                  disabled={signInMutation.isPending}
+                >
+                  {signInMutation.isPending ? "..." : TEXT.home.signInNow}
+                </Button>
+              ) : (
+                <Button
+                  className="h-12 rounded-button text-game-on-primary border-0"
+                  style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
+                  onClick={onGoRealName}
+                >
+                  {TEXT.home.toRealName}
+                </Button>
+              )}
+            </DialogFooter>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 rounded-xl h-11" onClick={onClose}>
-              {TEXT.home.signInLater}
-            </Button>
-            {user?.isRealName ? (
-              <Button
-                className="flex-1 rounded-xl h-11 text-white"
-                style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
-                onClick={() => setShowFaceScan(true)}
-                disabled={signInMutation.isPending}
-              >
-                {signInMutation.isPending ? "..." : TEXT.home.signInNow}
-              </Button>
-            ) : (
-              <Button
-                className="flex-1 rounded-xl h-11 text-white"
-                style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
-                onClick={onGoRealName}
-              >
-                {TEXT.home.toRealName}
-              </Button>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-    <FaceScanDialog
-      open={showFaceScan}
-      onClose={() => setShowFaceScan(false)}
-      onComplete={() => {
-        setShowFaceScan(false);
-        if (user?.pkeId) signInMutation.mutate({ pkeId: user.pkeId });
-      }}
-    />
+        </DialogContent>
+      </Dialog>
+      <FaceScanDialog
+        open={showFaceScan}
+        onClose={() => setShowFaceScan(false)}
+        onComplete={() => {
+          setShowFaceScan(false);
+          if (user?.pkeId) signInMutation.mutate({ pkeId: user.pkeId });
+        }}
+      />
     </>
   );
 }
