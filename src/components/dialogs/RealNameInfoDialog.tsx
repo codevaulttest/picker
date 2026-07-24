@@ -75,7 +75,7 @@ export default function RealNameInfoDialog({
         <div className="w-full space-y-3">
           {rows.map((row) => (
             <div key={row.label} className="flex items-center justify-between">
-              <span className={`text-body ${inkSec}`}>{row.label}</span>
+              <span className={`text-grid-label font-normal ${inkSec}`}>{row.label}</span>
               <span
                 className={`text-grid-label font-medium ${ink}`}
                 style={row.tone ? { color: row.tone } : undefined}
