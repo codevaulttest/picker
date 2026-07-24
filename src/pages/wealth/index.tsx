@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { useStore } from "@/stores";
+import GemFilled from "@/components/icons/GemFilled";
 import type { UserAssets } from "@/types";
 import {
   GAME,
@@ -41,6 +42,11 @@ export default function WealthPage() {
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
   const inkSec = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
 
+  const gems = ASSETS.filter((a) => a.group === "gem").map((item) => ({
+    ...item,
+    value: assetValue(assets, item.key),
+  }));
+
   const groups = ASSET_GROUPS.map((g) => ({
     ...g,
     items: ASSETS.filter((a) => a.group === g.key),
@@ -71,6 +77,24 @@ export default function WealthPage() {
         </div>
       </header>
 
+      {/* 宝石：顶部卡片，横向排列 */}
+      <section className="mx-3.5 mt-2.5 flex-shrink-0">
+        <div className={`p-4 rounded-card transition-colors ${softCard}`}>
+          <div className="grid grid-cols-3 gap-2">
+            {gems.map((item) => (
+              <GemCell
+                key={item.key}
+                item={item}
+                value={item.value}
+                isDark={isDark}
+                ink={ink}
+                inkSec={inkSec}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {groups.map((group) => (
         <section key={group.key} className="mx-3.5 mt-2.5 flex-shrink-0">
           <h2 className={`text-section-label uppercase mb-2 px-0.5 ${inkSec}`}>
@@ -94,6 +118,54 @@ export default function WealthPage() {
   );
 }
 
+function IconBadge({ item, isDark }: { item: AssetConfig; isDark: boolean }) {
+  const Icon = item.icon;
+  const iconBg = isDark ? softForDark(item.soft) : item.soft;
+
+  return (
+    <div
+      className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
+      style={{ background: iconBg }}
+    >
+      {item.iconFilled ? (
+        <GemFilled size={22} style={{ color: item.color }} />
+      ) : Icon ? (
+        <Icon size={18} strokeWidth={2} style={{ color: item.color }} />
+      ) : (
+        <span className="text-icon-badge" style={{ color: item.color }}>
+          {item.badgeText}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function GemCell({
+  item,
+  value,
+  isDark,
+  ink,
+  inkSec,
+}: {
+  item: AssetConfig;
+  value: number;
+  isDark: boolean;
+  ink: string;
+  inkSec: string;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center min-w-0 gap-1.5">
+      <IconBadge item={item} isDark={isDark} />
+      <p className={`text-hud-number tabular-nums truncate w-full ${ink}`}>
+        {value.toLocaleString()}
+      </p>
+      <p className={`text-section-label uppercase truncate w-full ${inkSec}`}>
+        {item.label}
+      </p>
+    </div>
+  );
+}
+
 function AssetRow({
   item,
   value,
@@ -107,20 +179,12 @@ function AssetRow({
   showDivider: boolean;
   ink: string;
 }) {
-  const Icon = item.icon;
-  const iconBg = isDark ? softForDark(item.soft) : item.soft;
-
   return (
     <div
       className="flex items-center gap-3 px-4 min-h-14"
       style={hairline(isDark, showDivider)}
     >
-      <div
-        className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
-        style={{ background: iconBg }}
-      >
-        <Icon size={18} strokeWidth={2} style={{ color: item.color }} />
-      </div>
+      <IconBadge item={item} isDark={isDark} />
       <p className={`flex-1 min-w-0 text-grid-label ${ink}`}>{item.label}</p>
       <p className={`text-hud-number tabular-nums ${ink}`}>
         {value.toLocaleString()}

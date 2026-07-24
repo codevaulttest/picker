@@ -6,10 +6,10 @@
 
 import {
   Home, CircleDot, Gift, HandCoins, KeyRound, ArrowUpDown,
-  Star, Users, Smartphone,
+  Users, Smartphone,
   Mail, ScanFace, Lock, CreditCard, UserCheck, Beef, TreePine,
-  Wine, Wallet, IdCard, Coins,
-  ClipboardList, Hourglass, Link2, Gem, type LucideIcon,
+  Wine, IdCard,
+  ClipboardList, Hourglass, Link2, type LucideIcon,
 } from "lucide-react";
 
 // Gamification accent palette — see DESIGN.md (Duolingo/Todoist/Strava blend,
@@ -308,7 +308,12 @@ export interface AssetConfig {
   color: string;
   /** 图标底 — 对应 soft wash */
   soft: string;
-  icon: LucideIcon;
+  /** 圆角色块图标；与 badgeText 二选一 */
+  icon?: LucideIcon;
+  /** 用宝石实心填充图标（GemFilled）代替 icon/badgeText */
+  iconFilled?: boolean;
+  /** 圆角色块内的短文字（1-3 字符），代替 icon — 见 {typography.icon-badge} */
+  badgeText?: string;
   group: AssetGroupKey;
 }
 
@@ -319,20 +324,21 @@ export const ASSET_GROUPS: { key: AssetGroupKey; title: string }[] = [
 ];
 
 export const ASSETS: AssetConfig[] = [
-  { key: "uv", label: "UV", color: GAME.infoBlue, soft: GAME.infoSoft, icon: CircleDot, group: "core" },
-  { key: "cv", label: "CV", color: GAME.primary, soft: GAME.primarySoft, icon: CircleDot, group: "core" },
-  { key: "pb", label: "P币", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Coins, group: "core" },
-  { key: "greenGem", label: "绿宝石", color: GAME.success, soft: GAME.successSoft, icon: Gem, group: "core" },
-  { key: "yellowGem", label: "黄宝石", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Gem, group: "core" },
-  { key: "redGem", label: "红宝石", color: GAME.error, soft: GAME.errorSoft, icon: Gem, group: "core" },
-  { key: "bv", label: "BV", color: GAME.infoBlue, soft: GAME.infoSoft, icon: Star, group: "core" },
-  { key: "dos", label: "DOS", color: GAME.success, soft: GAME.successSoft, icon: Wallet, group: "core" },
-  { key: "pkeBv", label: "东家BV", color: GAME.primary, soft: GAME.primarySoft, icon: Star, group: "donor" },
-  { key: "pkePoint", label: "东家积分", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Coins, group: "donor" },
-  { key: "asiaPkeBv", label: "亚太版东家BV", color: GAME.infoBlue, soft: GAME.infoSoft, icon: Star, group: "donor" },
-  { key: "asiaPkePoint", label: "亚太版东家积分", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Coins, group: "donor" },
-  { key: "globalBv", label: "国际版BV", color: GAME.infoBlue, soft: GAME.infoSoft, icon: Star, group: "donor" },
-  { key: "globalPkePoint", label: "国际版东家积分", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Coins, group: "donor" },
+  { key: "uv", label: "UV", color: GAME.infoBlue, soft: GAME.infoSoft, badgeText: "UV", group: "core" },
+  { key: "cv", label: "CV", color: GAME.primary, soft: GAME.primarySoft, badgeText: "CV", group: "core" },
+  { key: "pb", label: "P币", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, badgeText: "P", group: "core" },
+  { key: "bv", label: "BV", color: GAME.infoBlue, soft: GAME.infoSoft, badgeText: "BV", group: "core" },
+  { key: "dos", label: "DOS", color: GAME.success, soft: GAME.successSoft, badgeText: "DOS", group: "core" },
+  { key: "greenGem", label: "绿宝石", color: GAME.success, soft: GAME.successSoft, iconFilled: true, group: "gem" },
+  { key: "yellowGem", label: "黄宝石", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, iconFilled: true, group: "gem" },
+  { key: "redGem", label: "红宝石", color: GAME.error, soft: GAME.errorSoft, iconFilled: true, group: "gem" },
+  // 东家资产：东家=金色、亚太版=红色、国际版=绿色
+  { key: "pkeBv", label: "东家BV", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, badgeText: "BV", group: "donor" },
+  { key: "pkePoint", label: "东家积分", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, badgeText: "积", group: "donor" },
+  { key: "asiaPkeBv", label: "亚太版东家BV", color: GAME.error, soft: GAME.errorSoft, badgeText: "BV", group: "donor" },
+  { key: "asiaPkePoint", label: "亚太版东家积分", color: GAME.error, soft: GAME.errorSoft, badgeText: "积", group: "donor" },
+  { key: "globalBv", label: "国际版BV", color: GAME.success, soft: GAME.successSoft, badgeText: "BV", group: "donor" },
+  { key: "globalPkePoint", label: "国际版东家积分", color: GAME.success, soft: GAME.successSoft, badgeText: "积", group: "donor" },
   { key: "shotPoint", label: "拍点", color: GAME.primary, soft: GAME.primarySoft, icon: CircleDot, group: "other" },
 ];
 

@@ -118,6 +118,7 @@ module.exports = {
         "grid-label": ["15px", { lineHeight: "1.3", fontWeight: "500" }],
         "hud-number": ["13px", { lineHeight: "1.2", fontWeight: "700" }],
         "hud-label": ["13px", { lineHeight: "1.2", fontWeight: "600" }],
+        "icon-badge": ["13px", { lineHeight: "1.2", fontWeight: "700" }],
         body: ["13px", { lineHeight: "1.45", fontWeight: "400" }],
         "tab-label": ["13px", { lineHeight: "1.2", fontWeight: "500" }],
         caption: ["13px", { lineHeight: "1.4", fontWeight: "400" }],

@@ -112,6 +112,11 @@ typography:
     fontWeight: 600
     lineHeight: 1.2
     tabularNums: true
+  icon-badge:
+    fontFamily: PingFang SC, Noto Sans SC, Microsoft YaHei, -apple-system, sans-serif
+    fontSize: 13px
+    fontWeight: 700
+    lineHeight: 1.2 # short (1-3 char) text label standing in for an icon inside a soft-wash color chip, e.g. "UV"/"BV"/"积"
   body:
     fontFamily: PingFang SC, Noto Sans SC, Microsoft YaHei, -apple-system, sans-serif
     fontSize: 13px
@@ -316,6 +321,7 @@ Single CJK-first family — **PingFang SC** → **Noto Sans SC** (Android fallba
 | `{typography.grid-label}` | 15px/500 | Function-grid primary label ("认证码") — same size as `section-title`, distinguished by weight only |
 | `{typography.hud-number}` | 13px/700 tabular | HUD chip numbers (streak/points) |
 | `{typography.hud-label}` | 13px/600 tabular | HUD chip labels / level name ("LV.1 学徒") — one weight step lighter than `hud-number` |
+| `{typography.icon-badge}` | 13px/700 | Short (1-3 char) text standing in for an icon inside a soft-wash color chip ("UV"/"BV"/"积") |
 | `{typography.body}` | 13px/400 | Task detail body, descriptions, grid-item subtitle |
 | `{typography.tab-label}` | 13px/500 | Bottom tab bar labels |
 | `{typography.caption}` | 13px/400 | Fine print, stat-change annotation ("较前7日 ↑18.6%") |
