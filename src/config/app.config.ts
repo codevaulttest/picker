@@ -314,7 +314,6 @@ export interface AssetConfig {
 
 export const ASSET_GROUPS: { key: AssetGroupKey; title: string }[] = [
   { key: "core", title: "核心资产" },
-  { key: "gem", title: "宝石" },
   { key: "donor", title: "东家资产" },
   { key: "other", title: "其他" },
 ];
@@ -323,11 +322,11 @@ export const ASSETS: AssetConfig[] = [
   { key: "uv", label: "UV", color: GAME.infoBlue, soft: GAME.infoSoft, icon: CircleDot, group: "core" },
   { key: "cv", label: "CV", color: GAME.primary, soft: GAME.primarySoft, icon: CircleDot, group: "core" },
   { key: "pb", label: "P币", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Coins, group: "core" },
+  { key: "greenGem", label: "绿宝石", color: GAME.success, soft: GAME.successSoft, icon: Gem, group: "core" },
+  { key: "yellowGem", label: "黄宝石", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Gem, group: "core" },
+  { key: "redGem", label: "红宝石", color: GAME.error, soft: GAME.errorSoft, icon: Gem, group: "core" },
   { key: "bv", label: "BV", color: GAME.infoBlue, soft: GAME.infoSoft, icon: Star, group: "core" },
   { key: "dos", label: "DOS", color: GAME.success, soft: GAME.successSoft, icon: Wallet, group: "core" },
-  { key: "greenGem", label: "绿宝石", color: GAME.success, soft: GAME.successSoft, icon: Gem, group: "gem" },
-  { key: "yellowGem", label: "黄宝石", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Gem, group: "gem" },
-  { key: "redGem", label: "红宝石", color: GAME.error, soft: GAME.errorSoft, icon: Gem, group: "gem" },
   { key: "pkeBv", label: "东家BV", color: GAME.primary, soft: GAME.primarySoft, icon: Star, group: "donor" },
   { key: "pkePoint", label: "东家积分", color: GAME.rewardGold, soft: GAME.rewardGoldSoft, icon: Coins, group: "donor" },
   { key: "asiaPkeBv", label: "亚太版东家BV", color: GAME.infoBlue, soft: GAME.infoSoft, icon: Star, group: "donor" },
