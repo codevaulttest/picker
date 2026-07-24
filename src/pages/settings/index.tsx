@@ -8,7 +8,9 @@ import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
 import { useI18n } from "@/hooks/useI18n";
 import { useToast } from "@/hooks/use-toast";
+import { getUserProfile } from "@/lib/mockBackend";
 import PageHeader from "@/components/layout/PageHeader";
+import PullToRefresh from "@/components/layout/PullToRefresh";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
 import SwitchAccountSheet from "@/components/dialogs/SwitchAccountSheet";
 
@@ -22,9 +24,27 @@ export default function SettingsPage() {
   const isDark = useStore((s) => s.isDark);
   const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
+  const setAssets = useStore((s) => s.setAssets);
 
   const guestName = t.home.guestName;
   const pkeId = localStorage.getItem("pke_user_id");
+
+  const handleRefresh = async () => {
+    const start = Date.now();
+    if (pkeId) {
+      const profile = await getUserProfile(pkeId);
+      if (profile) {
+        setUser({ ...user, ...profile, name: profile.name || profile.realName || guestName, avatar: profile.avatar || user?.avatar } as any);
+        if (profile.assets) {
+          const a: Record<string, number> = {};
+          for (const [k, v] of Object.entries(profile.assets)) a[k] = typeof v === "string" ? Number(v) : (v as number);
+          setAssets(a as any);
+        }
+      }
+    }
+    const elapsed = Date.now() - start;
+    if (elapsed < 500) await new Promise((r) => setTimeout(r, 500 - elapsed));
+  };
 
   const softCard = isDark
     ? "bg-game-bg-card-dark shadow-warm-dark"
@@ -64,6 +84,7 @@ export default function SettingsPage() {
   ];
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="min-h-full flex flex-col transition-colors">
       <PageHeader
         avatar={user?.avatar}
@@ -166,5 +187,6 @@ export default function SettingsPage() {
         }}
       />
     </div>
+    </PullToRefresh>
   );
 }

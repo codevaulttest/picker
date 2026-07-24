@@ -4,6 +4,7 @@ import { CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import FaceScanDialog from "@/components/dialogs/FaceScanDialog";
 import { signIn } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
@@ -15,9 +16,10 @@ interface Props {
   open: boolean;
   reward: number;
   onClose: () => void;
+  onGoRealName: () => void;
 }
 
-export default function SignInDialog({ open, reward, onClose }: Props) {
+export default function SignInDialog({ open, reward, onClose, onGoRealName }: Props) {
   const { toast } = useToast();
   const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
@@ -29,6 +31,7 @@ export default function SignInDialog({ open, reward, onClose }: Props) {
       typeof localStorage !== "undefined" &&
       localStorage.getItem(CHECKIN_REMINDER_KEY) === "1"
   );
+  const [showFaceScan, setShowFaceScan] = useState(false);
 
   const handleReminderChange = (on: boolean) => {
     setReminder(on);
@@ -52,7 +55,8 @@ export default function SignInDialog({ open, reward, onClose }: Props) {
   });
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <>
+    <Dialog open={open && !showFaceScan} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-sm border-0 rounded-2xl">
         <div className="text-center py-4">
           <div
@@ -65,19 +69,21 @@ export default function SignInDialog({ open, reward, onClose }: Props) {
           <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>
             {TEXT.home.dailySignIn}
           </h3>
-          <p className={`text-sm mb-4 ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
-            {user?.isRealName ? (
-              <>
+          {user?.isRealName ? (
+            <div className="mb-4">
+              <p className={`text-sm ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
                 点击签到领取
-                <span className="font-bold text-game-primary tabular-nums">
-                  {" "}{Number.isInteger(reward) ? reward : reward.toFixed(1)}{" "}
-                </span>
-                P币
-              </>
-            ) : (
-              TEXT.clockIn.early.rules[0]
-            )}
-          </p>
+              </p>
+              <p className="text-hero-number text-game-primary-text tabular-nums mt-1">
+                +{Number.isInteger(reward) ? reward : reward.toFixed(1)}
+                <span className="text-sm font-normal"> P币</span>
+              </p>
+            </div>
+          ) : (
+            <p className={`text-sm mb-4 ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
+              {TEXT.home.toRealNameTip}
+            </p>
+          )}
           <div
             className={`flex items-center justify-between rounded-xl px-4 py-3 mb-4 ${
               isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"
@@ -100,7 +106,7 @@ export default function SignInDialog({ open, reward, onClose }: Props) {
               <Button
                 className="flex-1 rounded-xl h-11 text-white"
                 style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
-                onClick={() => user?.pkeId && signInMutation.mutate({ pkeId: user.pkeId })}
+                onClick={() => setShowFaceScan(true)}
                 disabled={signInMutation.isPending}
               >
                 {signInMutation.isPending ? "..." : TEXT.home.signInNow}
@@ -109,7 +115,7 @@ export default function SignInDialog({ open, reward, onClose }: Props) {
               <Button
                 className="flex-1 rounded-xl h-11 text-white"
                 style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
-                onClick={onClose}
+                onClick={onGoRealName}
               >
                 {TEXT.home.toRealName}
               </Button>
@@ -118,5 +124,14 @@ export default function SignInDialog({ open, reward, onClose }: Props) {
         </div>
       </DialogContent>
     </Dialog>
+    <FaceScanDialog
+      open={showFaceScan}
+      onClose={() => setShowFaceScan(false)}
+      onComplete={() => {
+        setShowFaceScan(false);
+        if (user?.pkeId) signInMutation.mutate({ pkeId: user.pkeId });
+      }}
+    />
+    </>
   );
 }

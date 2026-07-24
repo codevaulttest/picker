@@ -23,6 +23,7 @@ export default function SupportPage() {
     : "bg-game-bg-card shadow-warm";
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
   const inkTer = isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary";
+  const inkSec = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
 
   const canSubmit = content.trim().length > 0 && !submitting;
 
@@ -89,7 +90,7 @@ export default function SupportPage() {
             className="min-h-32 resize-none text-body"
             maxLength={500}
           />
-          <p className={`text-caption text-right mt-1 ${inkTer}`}>{content.length}/500</p>
+          <p className={`text-caption text-right mt-1 ${inkSec}`}>{content.length}/500</p>
 
           <p className={`text-grid-label mt-4 mb-3 ${ink}`}>上传截图（选填）</p>
           <div className="grid grid-cols-4 gap-2">
@@ -114,7 +115,7 @@ export default function SupportPage() {
                 style={{ borderColor: isDark ? GAME.dividerDark : GAME.divider }}
               >
                 <ImagePlus size={18} className={inkTer} />
-                <span className={`text-caption ${inkTer}`}>
+                <span className={`text-caption ${inkSec}`}>
                   {photos.length}/{MAX_PHOTOS}
                 </span>
               </button>

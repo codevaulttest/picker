@@ -1,11 +1,10 @@
-import { ShieldCheck } from "lucide-react";
+import { IdCard } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/stores";
@@ -17,6 +16,8 @@ interface Props {
   open: boolean;
   region?: CountryCode | null;
   documentType?: DocumentType | null;
+  maskedName?: string | null;
+  expireAt?: string | null;
   onClose: () => void;
 }
 
@@ -26,7 +27,14 @@ const CTA_STYLE = {
   color: GAME.onPrimary,
 } as const;
 
-export default function RealNameInfoDialog({ open, region, documentType, onClose }: Props) {
+export default function RealNameInfoDialog({
+  open,
+  region,
+  documentType,
+  maskedName,
+  expireAt,
+  onClose,
+}: Props) {
   const isDark = useStore((s) => s.isDark);
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
   const inkSec = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
@@ -35,6 +43,7 @@ export default function RealNameInfoDialog({ open, region, documentType, onClose
 
   const rows = [
     { label: "认证状态", value: "已认证", tone: GAME.success },
+    { label: "真实姓名", value: maskedName || "—" },
     { label: "证件类型", value: documentType ? DOCUMENT_LABELS[documentType] : "—" },
     {
       label: "认证地区",
@@ -47,6 +56,7 @@ export default function RealNameInfoDialog({ open, region, documentType, onClose
         "—"
       ),
     },
+    { label: "认证到期时间", value: expireAt || "—" },
   ];
 
   return (
@@ -57,10 +67,9 @@ export default function RealNameInfoDialog({ open, region, documentType, onClose
             className="w-16 h-16 rounded-button flex items-center justify-center mx-auto"
             style={{ background: isDark ? GAME.successSoftDark : GAME.successSoft }}
           >
-            <ShieldCheck size={32} style={{ color: GAME.success }} />
+            <IdCard size={32} style={{ color: GAME.success }} />
           </div>
           <DialogTitle>实名认证信息</DialogTitle>
-          <DialogDescription>（演示内容，仅用于原型展示）</DialogDescription>
         </DialogHeader>
 
         <div className="w-full space-y-3">

@@ -90,7 +90,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-3 text-center pr-8", className)}
+      // no pr-8: the close button is absolutely positioned (doesn't consume
+      // layout width), so padding it out here only pushed centered titles
+      // off-true-center toward the left.
+      className={cn("flex flex-col gap-3 text-center", className)}
       {...props}
     />
   )

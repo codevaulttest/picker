@@ -60,6 +60,7 @@ module.exports = {
           "on-primary": "#FFFFFF",
           "reward-gold": "#E8B339",
           "reward-gold-soft": "#FBF1DA",
+          "celebrate-red": "#E5484D", // decorative festive accent (e.g. gift-icon ribbon), never reuse for error/alert semantics
           "rank-gold": "#E8B339",
           "rank-silver": "#C6C6C6",
           "rank-bronze": "#C97A3D",
@@ -118,9 +119,9 @@ module.exports = {
         "hud-number": ["13px", { lineHeight: "1.2", fontWeight: "700" }],
         "hud-label": ["13px", { lineHeight: "1.2", fontWeight: "600" }],
         body: ["13px", { lineHeight: "1.45", fontWeight: "400" }],
-        "tab-label": ["11px", { lineHeight: "1.2", fontWeight: "500" }],
-        caption: ["11px", { lineHeight: "1.4", fontWeight: "400" }],
-        "section-label": ["11px", { lineHeight: "1.2", fontWeight: "600", letterSpacing: "0.4px" }],
+        "tab-label": ["13px", { lineHeight: "1.2", fontWeight: "500" }],
+        caption: ["13px", { lineHeight: "1.4", fontWeight: "400" }],
+        "section-label": ["13px", { lineHeight: "1.2", fontWeight: "600", letterSpacing: "0.4px" }],
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

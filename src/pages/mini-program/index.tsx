@@ -55,7 +55,7 @@ export default function MiniProgramPage() {
               <p className={`text-body mt-0.5 truncate ${inkSec}`}>{app.desc}</p>
             </div>
             {app.comingSoon && (
-              <span className={`text-caption px-2 py-0.5 rounded-pill flex-shrink-0 ${mutedSurface} ${mutedText}`}>
+              <span className={`text-caption px-2 py-0.5 rounded-pill flex-shrink-0 ${mutedSurface} ${inkSec}`}>
                 即将上线
               </span>
             )}

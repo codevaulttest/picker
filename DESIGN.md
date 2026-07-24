@@ -13,6 +13,7 @@ colors:
   on-primary: "#FFFFFF"
   reward-gold: "#E8B339"
   reward-gold-soft: "#FBF1DA"
+  celebrate-red: "#E5484D" # decorative festive accent (e.g. gift-icon ribbon), icon-only — distinct from `error`/`priority-urgent` semantics, never reuse for alerts
   rank-gold: "#E8B339"
   rank-silver: "#C6C6C6"
   rank-bronze: "#C97A3D"
@@ -118,17 +119,17 @@ typography:
     lineHeight: 1.45
   tab-label:
     fontFamily: PingFang SC, Noto Sans SC, Microsoft YaHei, -apple-system, sans-serif
-    fontSize: 11px
+    fontSize: 13px
     fontWeight: 500
     lineHeight: 1.2
   caption:
     fontFamily: PingFang SC, Noto Sans SC, Microsoft YaHei, -apple-system, sans-serif
-    fontSize: 11px
+    fontSize: 13px
     fontWeight: 400
     lineHeight: 1.4
   section-label:
     fontFamily: PingFang SC, Noto Sans SC, Microsoft YaHei, -apple-system, sans-serif
-    fontSize: 11px
+    fontSize: 13px
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: 0.4px
@@ -176,7 +177,8 @@ If you're extending this file, treat the *relationships* (X is bigger than Y, th
 
 3. **Rebrand pass** (this revision) — a second, higher-fidelity reference mockup (832×1755px, normalized to a 390pt/dp width) replaced the brand hue family: warm orange → blue (`{colors.primary}` `#1671F8`), and the page canvas moved from warm cream to cool white (`{colors.bg-page}` `#F7F9FC`). Card radius, badge radius, and the bottom-nav top radius were re-measured and updated (`{rounded.card}` 12→16px; new `{rounded.badge}` 14px, `{rounded.nav-top}` 28px). A new `{spacing.section}` 14px token captures this mockup's module-to-module gap, which sits off the strict 4pt grid (measurement carries ±1–2px error per the source spec) — treat it as a documented exception, not a precedent for adding more off-grid spacing values. **Typography was explicitly left untouched in this pass** — the HIG-anchored type scale (11/13/15/17/20/28/34px) stays the source of truth even though this mockup's raw measurements suggest slightly different numbers (e.g. 14–15px for the ID row). Semantic colors (`reward-gold`, `rank-*`, `priority-*`, `success`/`error`/`warning`/`info`) are unchanged — only the brand hue and neutral surfaces moved. Dark-theme surface tokens (`*-dark`) were deliberately left untouched in this pass — see pass 4 below.
 
-4. **Dark-theme rebrand pass** (this revision) — closed the gap left by pass 3: every dark surface (`bg-*-dark`), ink step (`ink-*-dark`), and the two brand-hue soft washes (`primary-soft-dark`, `primary-softest-dark`) were re-derived by rotating each token's hue from the retired warm-orange family (~21–34°) to the new brand-blue family (~215–224°) while holding saturation and lightness constant per step — this preserves every previously-computed contrast ratio (documented in the Dark theme section) without re-deriving them from scratch. The scrim (`overlay-dark`) and card shadow (`shadow-warm-dark`) moved from a warm near-black to a cool near-black on the same principle. The four semantic soft washes that were never tied to the brand hue (`reward-gold-soft-dark`, `info-soft-dark`, `success-soft-dark`, `error-soft-dark`) were left as-is. `focus-ring-dark` was already updated to brand blue in pass 3 alongside `primary` itself (it's theme-independent, unlike the surface tokens).
+4. **Dark-theme rebrand pass** (this revision) — closed the gap left by pass 3: every dark surface (`bg-*-dark`), ink step (`ink-*-dark`), and the two brand-hue soft washes (`primary-soft-dark`, `primary-softest-dark`) were re-derived by rotating each token's hue from the retired warm-orange family (~21–34°) to the new brand-blue family (~215–224°) while holding saturation and lightness constant per step — this preserves every previously-computed contrast ratio (documented in the Dark theme section) without re-deriving them from scratch. The scrim (`overlay-dark`) and card shadow (`shadow-warm-dark`) moved from a warm near-black to a cool near-black on the same principle. The four semantic soft washes that were never tied to the brand hue (`reward-gold-soft-dark`, `info-soft-dark`, `success-soft-dark`, `error-soft-dark`) were left as-is.
+5. **Accessibility pass — 11px stop retired** (this revision) — the product's actual user base skews 55–70 years old, non-internet-industry, with limited prior crypto/app experience, holding assets rather than day-trading them. Small type is a bigger barrier for this group than for a typical fintech-app audience, so the smallest HIG stop (11px) was dropped from the scale. `tab-label`, `caption`, and `section-label` — the three tokens that sat at 11px — all move to 13px, and now differentiate purely by weight/case/tracking rather than by being smaller than everything else. 13px becomes the new floor for the whole type scale (13/15/17/20/28/34px). No color, spacing, or radius tokens changed in this pass. `focus-ring-dark` was already updated to brand blue in pass 3 alongside `primary` itself (it's theme-independent, unlike the surface tokens).
 
 ## Overview
 
@@ -207,6 +209,7 @@ Picker (P客) is a light-gamified task platform, not a language-learning game an
 - **Primary Pressed** (`{colors.primary-pressed}` `#0759D5`, derived): pressed state, the CTA's thin ledge.
 - **Primary Soft** (`{colors.primary-soft}` `#EAF2FF`) / **Primary Softest** (`{colors.primary-softest}` `#F3F8FF`, derived): tint backgrounds — level badges, completed-row background, header gradient's terminal stop.
 - **Reward Gold** (`{colors.reward-gold}` `#E8B339`): coin/gem icon tint, reward-earned badge, "featured/high-pay" task tag *background* (with dark ink text on top, never gold text on white — see Accessibility).
+- **Celebrate Red** (`{colors.celebrate-red}` `#E5484D`): decorative festive accent paired with `reward-gold`, icon-only (e.g. gift-box ribbon on the check-in card). Not a semantic color — never reuse for error/alert/urgent states, and never as bare text.
 
 ### Task Status (Todoist-derived priority ladder → repurposed as task urgency/type)
 - **Urgent** (`{colors.priority-urgent}` `#DC5B4C`): 限时/紧急任务 tag + left accent bar.
@@ -301,7 +304,7 @@ Keep `primary-text` / reward-gold / rank-* / priority-* / chart-line / overlay /
 
 ## Typography
 
-Single CJK-first family — **PingFang SC** → **Noto Sans SC** (Android fallback) → **Microsoft YaHei** → system sans, weights 400/500/600/700. Sizes are Apple HIG Dynamic Type stops (11/13/15/17/20/28/34px) — a real platform type scale, not an invented one, and the same anchor points Strava/Todoist's actual iOS builds use.
+Single CJK-first family — **PingFang SC** → **Noto Sans SC** (Android fallback) → **Microsoft YaHei** → system sans, weights 400/500/600/700. Sizes are Apple HIG Dynamic Type stops (13/15/17/20/28/34px) — a real platform type scale, not an invented one, and the same anchor points Strava/Todoist's actual iOS builds use. **The 11px stop was retired** (accessibility pass, see Methodology): the target user base skews 55–70 and reads small type poorly, so 13px is now the floor for every token — `tab-label` / `caption` / `section-label` differentiate by weight, letter-spacing, and case, not by dropping below 13px.
 
 | Token | Size | Weight | Use |
 |---|---|---|---|
@@ -314,9 +317,9 @@ Single CJK-first family — **PingFang SC** → **Noto Sans SC** (Android fallba
 | `{typography.hud-number}` | 13px/700 tabular | HUD chip numbers (streak/points) |
 | `{typography.hud-label}` | 13px/600 tabular | HUD chip labels / level name ("LV.1 学徒") — one weight step lighter than `hud-number` |
 | `{typography.body}` | 13px/400 | Task detail body, descriptions, grid-item subtitle |
-| `{typography.tab-label}` | 11px/500 | Bottom tab bar labels |
-| `{typography.caption}` | 11px/400 | Fine print, stat-change annotation ("较前7日 ↑18.6%") |
-| `{typography.section-label}` | 11px/600 uppercase, 0.4px tracking | "今日任务"-style dividers |
+| `{typography.tab-label}` | 13px/500 | Bottom tab bar labels |
+| `{typography.caption}` | 13px/400 | Fine print, stat-change annotation ("较前7日 ↑18.6%") |
+| `{typography.section-label}` | 13px/600 uppercase, 0.4px tracking | "今日任务"-style dividers |
 
 **Principles**
 - Bold (700) is reserved for numbers-that-matter (stats, HUD) and screen/identity titles — not for decoration.
@@ -351,7 +354,7 @@ Everything else with a ❌ above is fill/icon/large-bold-only by rule (see the C
 ### Header / Identity Block
 - Horizontal padding 14px.
 - Avatar: 72px circle (re-measured from 84px in the rebrand pass), 3px white border, gap to identity text block 12px.
-- Identity name: `{typography.identity-name}` (20px/600 — pinned to the type scale; the rebrand mockup measured 20–22px, within rounding of the existing token). P客ID row: 6px below name, `{typography.caption}` (11px — mockup measured 14–15px, but Typography is pinned per Methodology) in `{colors.ink-secondary}`.
+- Identity name: `{typography.identity-name}` (20px/600 — pinned to the type scale; the rebrand mockup measured 20–22px, within rounding of the existing token). P客ID row: 6px below name, `{typography.caption}` (13px — mockup measured 14–15px, close to the retired token's replacement) in `{colors.ink-secondary}`.
 - Level badge / progress pill: 8px margin-top from ID row, `{rounded.badge}` 14px radius, 28px tall (4pt grid), 8px horizontal padding, `{colors.primary-soft}` background. Sits directly under the ID row (not spaced out by the avatar's height) and is not width-constrained by the sign-in button.
 - Sign-in ("签到") button: absolutely positioned top-right so it never competes for width with the identity column. ~88×40px pill (re-measured from ~100×52px), `linear-gradient(135deg, {colors.primary}, {colors.primary-light})` fill, white text/icon.
 - Background: vertical gradient `{colors.primary-softest}` → `{colors.bg-page}`, spanning the full header height. Top safe area ≈44px before content starts.
@@ -578,7 +581,8 @@ Everything else with a ❌ above is fill/icon/large-bold-only by rule (see the C
 - Don't turn System Toast into a translucent/glass banner or a green/blue filled strip — Soft card + icon accent only.
 - Don't use Celebration Toast motion (confetti / count-up) for copy/save/error feedback.
 - Don't render the page background and card background as the same value (light or dark).
-- Don't invent a new font-size for a one-off — pick from the existing HIG-anchored scale (11/13/15/17/20/28/34), even if a measurement says otherwise.
+- Don't invent a new font-size for a one-off — pick from the existing HIG-anchored scale (13/15/17/20/28/34), even if a measurement says otherwise.
+- Don't reintroduce 11px anywhere — it was retired for accessibility (target users skew 55–70), 13px is the floor.
 - Don't ship Dialogs with cool slate overlays, glassmorphic panels, or Default-shadcn blue focus rings — remint to overlay / Soft card / focus-ring tokens.
 - Don't put Primary ("确认") on the left of a two-button footer.
 - Don't use hover-only Tooltip patterns as the primary help affordance on mobile — use ⓘ → Dialog/Sheet.
@@ -589,7 +593,7 @@ Everything else with a ❌ above is fill/icon/large-bold-only by rule (see the C
 Quick reference for prompting an agent with this file:
 - Brand fill: `#1671F8` gradient to `#2F80FF`. Brand **text**: `#1671F8` (`primary-text` ≡ `primary`) — the retired warm orange (`#FF6B0B`) and its old deep `#C24C00` text alias are gone from the palette.
 - Page canvas `#F7F9FC` (cool white) vs card `#FFFFFF` (pure white) — always two different values. Dark: page `#101217` vs card `#1A1D24` (cool charcoal, same brand-blue hue family as light).
-- Type scale: 11/13/15/17/20/28/34px (Apple HIG stops) — don't pick a size outside this set; unchanged by the rebrand.
+- Type scale: 13/15/17/20/28/34px (Apple HIG stops) — don't pick a size outside this set. The 11px stop was retired for accessibility (target users skew 55–70); `tab-label`/`caption`/`section-label` now sit at 13px.
 - Spacing: strict 4pt grid (4/8/12/16/20/24/32), plus one documented exception `{spacing.section}` 14px for this mockup's module gap.
 - Reward/points/featured-tag accent: `#E8B339` (fill/icon only, pair with `#FBF1DA` / dark `#3A3220` if text is nearby) · Rank gold/silver/bronze: `#E8B339`/`#C6C6C6`/`#C97A3D`.
 - Task priority ladder: urgent `#DC5B4C` · featured `#E8B339` · normal `#3A7BD5` · default `#B9B7B0`.

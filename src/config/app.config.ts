@@ -8,7 +8,7 @@ import {
   Home, CircleDot, Gift, HandCoins, KeyRound, ArrowUpDown,
   Star, Users, Smartphone,
   Mail, ScanFace, Lock, CreditCard, UserCheck, Beef, TreePine,
-  Wine, Wallet, ShieldCheck, Coins,
+  Wine, Wallet, IdCard, Coins,
   ClipboardList, Hourglass, Link2, Gem, type LucideIcon,
 } from "lucide-react";
 
@@ -27,6 +27,8 @@ export const GAME = {
   onPrimary: "#FFFFFF",
   rewardGold: "#E8B339",
   rewardGoldSoft: "#FBF1DA",
+  /** DESIGN.md celebrate-red：装饰性喜庆红，仅用于图标点缀（如签到礼物丝带），不作语义色使用 */
+  celebrateRed: "#E5484D",
   infoBlue: "#3A7BD5",
   /** DESIGN.md info-soft */
   infoSoft: "#EAF1FB",
@@ -471,18 +473,9 @@ export const SECURITY_MENU: SecurityMenuConfig[] = [
     bg: GAME.bgMuted,
   },
   {
-    key: "face",
-    label: "人脸登记",
-    icon: ScanFace,
-    color: GAME.primary,
-    bg: GAME.primarySoft,
-    status: "未登记",
-    statusTone: "muted",
-  },
-  {
     key: "realname",
     label: "实名认证",
-    icon: ShieldCheck,
+    icon: IdCard,
     color: GAME.success,
     bg: GAME.successSoft,
     status: "去认证",
@@ -530,6 +523,7 @@ export const TEXT = {
     signInLater: "暂不签到",
     signInNow: "立即签到",
     toRealName: "去实名认证",
+    toRealNameTip: "完成实名认证后即可参与每日签到领奖励",
     noData: "暂无收益数据",
     idCopied: "已复制 ID",
     signInRulesTitle: "签到规则",

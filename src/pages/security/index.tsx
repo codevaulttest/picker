@@ -26,6 +26,7 @@ import EmailBindDialog from "@/components/dialogs/EmailBindDialog";
 import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
 import RealNameDialog, { type RealNameInfo } from "@/components/dialogs/RealNameDialog";
 import RealNameInfoDialog from "@/components/dialogs/RealNameInfoDialog";
+import { createDemoRealNameInfo } from "@/lib/realName";
 import VerifyIdentityDialog from "@/components/dialogs/VerifyIdentityDialog";
 import FaceLoginConsentDialog from "@/components/dialogs/FaceLoginConsentDialog";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
@@ -70,7 +71,7 @@ function statusColor(tone: SecurityStatusTone | undefined, isDark: boolean): str
       return GAME.primaryText;
     case "muted":
     default:
-      return isDark ? GAME.inkTertiaryDark : GAME.inkTertiary;
+      return isDark ? GAME.inkSecondaryDark : GAME.inkSecondary;
   }
 }
 
@@ -226,6 +227,10 @@ export default function SecurityPage() {
       description: on ? `已绑定 CodeVAULT 账号 ${account}` : undefined,
     });
   };
+
+  // 已认证但尚未在本次流程中采集过认证信息（如历史数据）时，用演示数据兜底展示
+  const displayedRealNameInfo =
+    realNameInfo ?? (user?.isRealName ? createDemoRealNameInfo(user.pkeId) : null);
 
   return (
     <div className="min-h-full flex flex-col transition-colors">
@@ -528,8 +533,10 @@ export default function SecurityPage() {
 
       <RealNameInfoDialog
         open={showRealNameInfo}
-        region={realNameInfo?.region}
-        documentType={realNameInfo?.documentType}
+        region={displayedRealNameInfo?.region}
+        documentType={displayedRealNameInfo?.documentType}
+        maskedName={displayedRealNameInfo?.maskedName}
+        expireAt={displayedRealNameInfo?.expireAt}
         onClose={() => setShowRealNameInfo(false)}
       />
 

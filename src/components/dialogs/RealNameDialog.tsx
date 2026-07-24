@@ -7,15 +7,13 @@ import { GAME } from "@/config/app.config";
 import CountryCodeSheet from "@/components/dialogs/CountryCodeSheet";
 import { DEFAULT_COUNTRY, findCountry, type CountryCode } from "@/lib/phoneCountries";
 import { allowedDocumentTypes, DOCUMENT_LABELS, type DocumentType } from "@/lib/documentTypes";
+import { createDemoRealNameInfo, type RealNameInfo } from "@/lib/realName";
 import idCardFrontIcon from "@/assets/svg/svg/custom/id-card-front.svg?url";
 import idCardBackIcon from "@/assets/svg/svg/custom/id-card-back.svg?url";
 import faceScanIcon from "@/assets/svg/svg/custom/face-scan.svg?url";
 import checkSuccessIcon from "@/assets/svg/svg/custom/check-success.svg?url";
 
-export interface RealNameInfo {
-  region: CountryCode;
-  documentType: DocumentType;
-}
+export type { RealNameInfo };
 
 interface Props {
   open: boolean;
@@ -36,6 +34,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
   const setHideBottomNav = useStore((s) => s.setHideBottomNav);
   const assets = useStore((s) => s.assets);
   const updateAsset = useStore((s) => s.updateAsset);
+  const pkeId = useStore((s) => s.user?.pkeId);
   const [step, setStep] = useState<Step>("region");
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
@@ -148,7 +147,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
       if (authCode.length === 12) {
         setStep("done");
         setTimeout(() => {
-          onComplete({ region: country, documentType });
+          onComplete(createDemoRealNameInfo(pkeId, country, documentType));
           reset();
         }, 1500);
       } else {
@@ -173,7 +172,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
     } else if (step === "code") {
       setStep("done");
       setTimeout(() => {
-        onComplete({ region: country, documentType });
+        onComplete(createDemoRealNameInfo(pkeId, country, documentType));
         reset();
       }, 1500);
     }
@@ -191,7 +190,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
       setPaying(false);
       setStep("done");
       setTimeout(() => {
-        onComplete({ region: country, documentType });
+        onComplete(createDemoRealNameInfo(pkeId, country, documentType));
         reset();
       }, 1500);
     }, 600);
@@ -317,7 +316,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
                     }`}>
                     {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
                       <img src={idCardFrontIcon} alt="" width={24} height={24} />
-                      <span className={`text-[10px] ${isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}`}>{DOCUMENT_LABELS[documentType]}正面</span>
+                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}正面</span>
                     </>}
                     <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
                   </button>
@@ -327,7 +326,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
                     }`}>
                     {backImg ? <img src={backImg} className="w-full h-full object-cover" alt="back" /> : <>
                       <img src={idCardBackIcon} alt="" width={24} height={24} />
-                      <span className={`text-[10px] ${isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}`}>{DOCUMENT_LABELS[documentType]}反面</span>
+                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}反面</span>
                     </>}
                     <input ref={backInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "back")} />
                   </button>
@@ -339,7 +338,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
                   }`}>
                   {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
                     <img src={idCardFrontIcon} alt="" width={24} height={24} />
-                    <span className={`text-[10px] ${isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}`}>{DOCUMENT_LABELS[documentType]}信息页</span>
+                    <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}信息页</span>
                   </>}
                   <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
                 </button>
@@ -489,7 +488,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
                       className={`w-full h-12 px-4 rounded-xl border text-sm font-mono tracking-[0.3em] text-center focus:outline-none focus:ring-2 focus:ring-game-primary-light ${
                         isDark ? "bg-game-bg-muted-dark border-game-border-light-dark text-game-ink-dark" : "bg-white border-game-border-light text-game-ink"
                       }`} />
-                    <p className={`text-[10px] text-center ${isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}`}>12位字母+数字组合</p>
+                    <p className={`text-caption text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>12位字母+数字组合</p>
                   </div>
                 )}
               </div>
@@ -523,7 +522,7 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
             <button
               type="button"
               onClick={handleSkip}
-              className={`block w-full text-center text-[12px] ${isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}`}
+              className={`block w-full text-center text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}
             >
               （demo）跳过
             </button>

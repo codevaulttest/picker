@@ -101,7 +101,6 @@ export default function DonorPage() {
 
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
   const inkSec = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
-  const inkTer = isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary";
   const inkDis = isDark ? "text-game-ink-disabled-dark" : "text-game-ink-disabled";
   const mutedSurface = isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted";
   const dialogSurface = isDark ? "bg-game-bg-card-dark" : undefined;
@@ -254,7 +253,7 @@ export default function DonorPage() {
               <div className="flex items-center gap-2">
                 <span className={`text-hud-number tabular-nums ${ink}`}>
                   {Number(o.payAmount).toLocaleString()}{" "}
-                  <span className={`text-caption font-normal ${inkTer}`}>{o.payAsset}</span>
+                  <span className={`text-caption font-normal ${inkSec}`}>{o.payAsset}</span>
                 </span>
                 <ChevronRight size={16} className={inkDis} />
               </div>
@@ -271,7 +270,7 @@ export default function DonorPage() {
             </div>
             <div className="flex flex-col items-center gap-1 text-center">
               <p className={`text-section-title ${ink}`}>{t.donor.noOrders}</p>
-              <p className={`text-body ${inkTer}`}>{t.donor.noOrdersHint}</p>
+              <p className={`text-body ${inkSec}`}>{t.donor.noOrdersHint}</p>
             </div>
             <Button
               onClick={() => setShowRisk(true)}
@@ -299,7 +298,7 @@ export default function DonorPage() {
               <p className="text-hero-number tabular-nums text-game-primary-text">
                 {assets ? Number(assets.totalBvIncome || 0).toLocaleString() : "0"}
               </p>
-              <p className={`text-caption mt-1 ${inkTer}`}>
+              <p className={`text-caption mt-1 ${inkSec}`}>
                 1 BV打赏 = 1点数 / 1 DOS = {DONATE_CONFIG.dosBvRate}点数
               </p>
             </div>
@@ -321,7 +320,7 @@ export default function DonorPage() {
                 {starLv}星 · {STAR_LEVELS.find((s) => s.star === starLv)?.label || "新星"}
               </p>
               {starLv < 6 && (
-                <p className={`text-caption mt-1 ${inkTer}`}>
+                <p className={`text-caption mt-1 ${inkSec}`}>
                   距下一级还需{" "}
                   {(STAR_LEVELS.find((s) => s.star === starLv + 1)?.min || 0) - Number(assets?.totalBvIncome || 0)}{" "}
                   点数
@@ -340,7 +339,7 @@ export default function DonorPage() {
                     <Star size={14} className="text-game-reward-gold fill-game-reward-gold" />
                     <span className={`text-body font-semibold ${ink}`}>{s.star}星 · {s.label}</span>
                   </div>
-                  <span className={`text-caption tabular-nums ${inkTer}`}>
+                  <span className={`text-caption tabular-nums ${inkSec}`}>
                     {s.min.toLocaleString()} ~ {s.max === 10000000 ? "∞" : s.max.toLocaleString()}
                   </span>
                 </div>
@@ -379,7 +378,7 @@ export default function DonorPage() {
           </div>
           {exchangeTab === "upgrade" && (
             <div className="space-y-1">
-              <div className={`flex items-center justify-between py-2 px-1 text-caption font-semibold ${inkTer}`}>
+              <div className={`flex items-center justify-between py-2 px-1 text-caption font-semibold ${inkSec}`}>
                 <span>等级</span><span>所需BV</span>
               </div>
               {UPGRADE_CODES.map((u) => (
@@ -402,7 +401,7 @@ export default function DonorPage() {
                 className={`p-3 rounded-button text-center ${isDark ? "bg-game-info-soft-dark" : "bg-game-info-soft"}`}
               >
                 <p className={`text-body font-semibold ${ink}`}>1000 BV = 1 认证码</p>
-                <p className={`text-caption mt-1 ${inkTer}`}>兑换10个赠送3个，兑换20个赠送6个</p>
+                <p className={`text-caption mt-1 ${inkSec}`}>兑换10个赠送3个，兑换20个赠送6个</p>
               </div>
               <div>
                 <label className={`text-body font-semibold mb-2 block ${ink}`}>兑换数量</label>
@@ -542,7 +541,7 @@ export default function DonorPage() {
                     <img src={LEVEL_ICONS[l.level]} alt="" className="w-8 h-8 object-contain mx-auto mb-1" />
                   )}
                   <div className={`text-body font-semibold ${ink}`}>{l.name}</div>
-                  <div className={`text-caption ${inkTer}`}>Lv.{l.level}</div>
+                  <div className={`text-caption ${inkSec}`}>Lv.{l.level}</div>
                   <div className="text-hud-number tabular-nums mt-1 text-game-primary-text">{l.bv}BV</div>
                 </button>
               );
