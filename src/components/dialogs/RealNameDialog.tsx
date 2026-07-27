@@ -23,7 +23,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Step = "region" | "doc" | "face" | "code" | "done";
+type Step = "code" | "region" | "doc" | "face" | "done";
 type UnlockMethod = "code" | "pay";
 type CodeType = "pke" | "vault";
 
@@ -37,7 +37,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
   const assets = useStore((s) => s.assets);
   const updateAsset = useStore((s) => s.updateAsset);
   const pkeId = useStore((s) => s.user?.pkeId);
-  const [step, setStep] = useState<Step>("region");
+  const [step, setStep] = useState<Step>(skipUnlockPay ? "region" : "code");
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [documentType, setDocumentType] = useState<DocumentType>(allowedDocumentTypes(DEFAULT_COUNTRY)[0]);
@@ -72,7 +72,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
   };
 
   const reset = useCallback(() => {
-    setStep("region");
+    setStep(skipUnlockPay ? "region" : "code");
     setCountry(DEFAULT_COUNTRY);
     setDocumentType(allowedDocumentTypes(DEFAULT_COUNTRY)[0]);
     setUnlockMethod("code");
@@ -88,7 +88,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
       videoRef.current.srcObject = null;
     }
     setStreamActive(false);
-  }, []);
+  }, [skipUnlockPay]);
 
   const handleClose = () => {
     reset();
@@ -129,7 +129,13 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
   };
 
   const handleNext = () => {
-    if (step === "region") {
+    if (step === "code" && unlockMethod === "code" && authCode.trim()) {
+      if (authCode.length === 12) {
+        setStep("region");
+      } else {
+        toast({ title: "认证码格式错误", description: "请输入12位字母+数字认证码", variant: "destructive" });
+      }
+    } else if (step === "region") {
       setStep("doc");
     } else if (step === "doc") {
       if (!frontImg) {
@@ -151,24 +157,16 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
           (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
         }
         setStreamActive(false);
-        if (skipUnlockPay) {
-          finishVerification();
-        } else {
-          setStep("code");
-        }
-      }
-    } else if (step === "code" && unlockMethod === "code" && authCode.trim()) {
-      if (authCode.length === 12) {
         finishVerification();
-      } else {
-        toast({ title: "认证码格式错误", description: "请输入12位字母+数字认证码", variant: "destructive" });
       }
     }
   };
 
   /** 仅演示环境使用：跳过当前步骤的校验/操作，直接进入下一步 */
   const handleSkip = () => {
-    if (step === "region") {
+    if (step === "code") {
+      setStep("region");
+    } else if (step === "region") {
       setStep("doc");
     } else if (step === "doc") {
       setStep("face");
@@ -178,12 +176,6 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
         (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
       }
       setStreamActive(false);
-      if (skipUnlockPay) {
-        finishVerification();
-      } else {
-        setStep("code");
-      }
-    } else if (step === "code") {
       finishVerification();
     }
   };
@@ -198,21 +190,18 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
     setTimeout(() => {
       updateAsset("cv", balance - REAL_NAME_PAY_COST);
       setPaying(false);
-      setStep("done");
-      setTimeout(() => {
-        onComplete(createDemoRealNameInfo(pkeId, country, documentType));
-        reset();
-      }, 1500);
+      setStep("region");
     }, 600);
   };
 
-  const progress = (["region", "doc", "face", "code", "done"] as Step[]).indexOf(step) + 1;
+  const progress = (["code", "region", "doc", "face", "done"] as Step[]).indexOf(step) + 1;
 
   useEffect(() => {
     if (!open) return;
+    setStep(skipUnlockPay ? "region" : "code");
     setHideBottomNav(true);
     return () => setHideBottomNav(false);
-  }, [open, setHideBottomNav]);
+  }, [open, skipUnlockPay, setHideBottomNav]);
 
   if (!open) return null;
 
@@ -237,10 +226,10 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
             <ChevronLeft size={22} strokeWidth={2} className={ink} />
           </button>
           <h1 className={`pointer-events-none absolute inset-x-0 text-center text-section-title ${ink}`}>
+            {step === "code" && "支付或填写认证码"}
             {step === "region" && "选择国家/地区"}
             {step === "doc" && "上传证件信息"}
             {step === "face" && "人脸核验"}
-            {step === "code" && "支付或填写认证码"}
             {step === "done" && "认证成功"}
           </h1>
         </div>
@@ -260,138 +249,10 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4">
-          {/* 步骤1：选择国家/地区 */}
-          {step === "region" && (
-            <>
-              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>请选择您证件所属的国家/地区</p>
-              <button
-                type="button"
-                onClick={() => setShowCountryPicker(true)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
-                  isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
-                }`}
-              >
-                {countryOption.Flag ? (
-                  <countryOption.Flag className="w-7 h-5 rounded-[2px] flex-shrink-0" />
-                ) : (
-                  <Globe size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{countryOption.name}</p>
-                </div>
-                <ChevronRight size={18} className={isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"} />
-              </button>
-
-              <CountryCodeSheet
-                open={showCountryPicker}
-                value={country}
-                showDial={false}
-                onSelect={handleSelectCountry}
-                isSelectable={(code) => code === DEFAULT_COUNTRY}
-                onIneligible={() => toast({ title: "（demo）进入第三方认证流程" })}
-                onClose={() => setShowCountryPicker(false)}
-              />
-            </>
-          )}
-
-          {/* 步骤2：证件上传 - 证件类型随国家/地区变化，可调相册 */}
-          {step === "doc" && (
-            <>
-              {docTypes.length > 1 && (
-                <div className={`inline-flex items-center gap-1 rounded-button p-1 w-full ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
-                  {docTypes.map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => handleSelectDocType(type)}
-                      className={`flex-1 px-3 py-1.5 rounded-button text-body transition-colors ${
-                        documentType === type
-                          ? isDark ? "bg-game-bg-card-dark text-game-ink-dark shadow-warm-dark" : "bg-game-bg-card text-game-ink shadow-warm"
-                          : isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"
-                      }`}
-                    >
-                      {DOCUMENT_LABELS[type]}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
-                请上传{DOCUMENT_LABELS[documentType]}{needsBack ? "正反面" : "信息页"}
-              </p>
-
-              {needsBack ? (
-                <div className="flex gap-3">
-                  <button onClick={() => frontInputRef.current?.click()}
-                    className={`flex-1 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
-                      isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
-                    }`}>
-                    {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
-                      <img src={idCardFrontIcon} alt="" width={24} height={24} />
-                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}正面</span>
-                    </>}
-                    <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
-                  </button>
-                  <button onClick={() => backInputRef.current?.click()}
-                    className={`flex-1 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
-                      isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
-                    }`}>
-                    {backImg ? <img src={backImg} className="w-full h-full object-cover" alt="back" /> : <>
-                      <img src={idCardBackIcon} alt="" width={24} height={24} />
-                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}反面</span>
-                    </>}
-                    <input ref={backInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "back")} />
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => frontInputRef.current?.click()}
-                  className={`w-full h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
-                    isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
-                  }`}>
-                  {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
-                    <img src={idCardFrontIcon} alt="" width={24} height={24} />
-                    <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}信息页</span>
-                  </>}
-                  <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
-                </button>
-              )}
-            </>
-          )}
-
-          {/* 步骤3：人脸 - 调摄像头 */}
-          {step === "face" && (
-            <div className="text-center space-y-4">
-              <div className="relative w-40 h-40 rounded-full mx-auto overflow-hidden flex items-center justify-center"
-                style={{ background: streamActive ? "#000" : `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}>
-                {streamActive ? (
-                  <video ref={videoRef} className="w-full h-full object-cover" playsInline muted autoPlay />
-                ) : (
-                  <img src={faceScanIcon} alt="" width={48} height={48} />
-                )}
-                {/* 扫描线动画 */}
-                {streamActive && <div className="absolute inset-x-0 h-0.5 bg-game-success animate-scan" style={{ animation: "scan 2s linear infinite" }} />}
-              </div>
-              {!streamActive && (
-                <Button className="rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
-                  onClick={startCamera}>开启摄像头</Button>
-              )}
-              <p className={`text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{actions[faceAction]}</p>
-              <div className="flex justify-center gap-1.5">
-                {actions.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-2.5 h-2.5 rounded-full transition-all ${i > faceAction ? (isDark ? "bg-game-border-light-dark" : "bg-game-border-light") : ""}`}
-                    style={i <= faceAction ? { background: GAME.primary } : undefined}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 步骤4：支付 500 CV 或 输入认证码 */}
+          {/* 步骤1：支付 500 CV 或 输入认证码，解锁后续认证流程 */}
           {step === "code" && (
             <>
-              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>选择一种方式，完成实名认证</p>
+              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>选择一种方式，解锁实名认证</p>
 
               {/* 解锁方式：支付 / 认证码 —— 两张可展开的选择卡 */}
               <div
@@ -507,6 +368,134 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
             </>
           )}
 
+          {/* 步骤2：选择国家/地区 */}
+          {step === "region" && (
+            <>
+              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>请选择您证件所属的国家/地区</p>
+              <button
+                type="button"
+                onClick={() => setShowCountryPicker(true)}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
+                  isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
+                }`}
+              >
+                {countryOption.Flag ? (
+                  <countryOption.Flag className="w-7 h-5 rounded-[2px] flex-shrink-0" />
+                ) : (
+                  <Globe size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{countryOption.name}</p>
+                </div>
+                <ChevronRight size={18} className={isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"} />
+              </button>
+
+              <CountryCodeSheet
+                open={showCountryPicker}
+                value={country}
+                showDial={false}
+                onSelect={handleSelectCountry}
+                isSelectable={(code) => code === DEFAULT_COUNTRY}
+                onIneligible={() => toast({ title: "（demo）进入第三方认证流程" })}
+                onClose={() => setShowCountryPicker(false)}
+              />
+            </>
+          )}
+
+          {/* 步骤3：证件上传 - 证件类型随国家/地区变化，可调相册 */}
+          {step === "doc" && (
+            <>
+              {docTypes.length > 1 && (
+                <div className={`inline-flex items-center gap-1 rounded-button p-1 w-full ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
+                  {docTypes.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => handleSelectDocType(type)}
+                      className={`flex-1 px-3 py-1.5 rounded-button text-body transition-colors ${
+                        documentType === type
+                          ? isDark ? "bg-game-bg-card-dark text-game-ink-dark shadow-warm-dark" : "bg-game-bg-card text-game-ink shadow-warm"
+                          : isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"
+                      }`}
+                    >
+                      {DOCUMENT_LABELS[type]}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
+                请上传{DOCUMENT_LABELS[documentType]}{needsBack ? "正反面" : "信息页"}
+              </p>
+
+              {needsBack ? (
+                <div className="flex gap-3">
+                  <button onClick={() => frontInputRef.current?.click()}
+                    className={`flex-1 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
+                      isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
+                    }`}>
+                    {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
+                      <img src={idCardFrontIcon} alt="" width={24} height={24} />
+                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}正面</span>
+                    </>}
+                    <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
+                  </button>
+                  <button onClick={() => backInputRef.current?.click()}
+                    className={`flex-1 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
+                      isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
+                    }`}>
+                    {backImg ? <img src={backImg} className="w-full h-full object-cover" alt="back" /> : <>
+                      <img src={idCardBackIcon} alt="" width={24} height={24} />
+                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}反面</span>
+                    </>}
+                    <input ref={backInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "back")} />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => frontInputRef.current?.click()}
+                  className={`w-full h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
+                    isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
+                  }`}>
+                  {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
+                    <img src={idCardFrontIcon} alt="" width={24} height={24} />
+                    <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}信息页</span>
+                  </>}
+                  <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
+                </button>
+              )}
+            </>
+          )}
+
+          {/* 步骤4：人脸 - 调摄像头 */}
+          {step === "face" && (
+            <div className="text-center space-y-4">
+              <div className="relative w-40 h-40 rounded-full mx-auto overflow-hidden flex items-center justify-center"
+                style={{ background: streamActive ? "#000" : `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}>
+                {streamActive ? (
+                  <video ref={videoRef} className="w-full h-full object-cover" playsInline muted autoPlay />
+                ) : (
+                  <img src={faceScanIcon} alt="" width={48} height={48} />
+                )}
+                {/* 扫描线动画 */}
+                {streamActive && <div className="absolute inset-x-0 h-0.5 bg-game-success animate-scan" style={{ animation: "scan 2s linear infinite" }} />}
+              </div>
+              {!streamActive && (
+                <Button className="rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
+                  onClick={startCamera}>开启摄像头</Button>
+              )}
+              <p className={`text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{actions[faceAction]}</p>
+              <div className="flex justify-center gap-1.5">
+                {actions.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${i > faceAction ? (isDark ? "bg-game-border-light-dark" : "bg-game-border-light") : ""}`}
+                    style={i <= faceAction ? { background: GAME.primary } : undefined}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 完成 */}
           {step === "done" && (
             <div className="text-center py-4">
@@ -522,11 +511,11 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
               style={{ background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})` }}
               onClick={step === "code" && unlockMethod === "pay" ? handlePay : handleNext}
               disabled={step === "code" && unlockMethod === "pay" && paying}>
-              {step === "code"
-                ? unlockMethod === "pay"
-                  ? (paying ? "支付中…" : `支付 ${REAL_NAME_PAY_COST} CV 完成认证`)
-                  : "完成认证"
-                : "下一步"}
+              {step === "code" && unlockMethod === "pay"
+                ? (paying ? "支付中…" : `支付 ${REAL_NAME_PAY_COST} CV 解锁认证`)
+                : step === "face"
+                  ? "完成认证"
+                  : "下一步"}
             </Button>
           )}
 
