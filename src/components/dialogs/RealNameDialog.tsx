@@ -263,7 +263,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
           {/* 步骤1：选择国家/地区 */}
           {step === "region" && (
             <>
-              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>选择证件所属的国家/地区，用于判断可用的证件类型</p>
+              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>请选择您证件所属的国家/地区</p>
               <button
                 type="button"
                 onClick={() => setShowCountryPicker(true)}
@@ -287,6 +287,8 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
                 value={country}
                 showDial={false}
                 onSelect={handleSelectCountry}
+                isSelectable={(code) => code === DEFAULT_COUNTRY}
+                onIneligible={() => toast({ title: "（demo）进入第三方认证流程" })}
                 onClose={() => setShowCountryPicker(false)}
               />
             </>

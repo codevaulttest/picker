@@ -339,7 +339,7 @@ export default function SecurityPage() {
                     onClick={
                       isRealname
                         ? () => {
-                            if (verifyMeta?.action === "submit") {
+                            if (!verifyMeta || verifyMeta.action === "submit") {
                               setSkipUnlockPay(false);
                               setShowRealName(true);
                             } else {

@@ -16,10 +16,22 @@ interface Props {
   onClose: () => void;
   /** 是否显示国际区号（手机号场景需要，纯地区选择场景可关闭） */
   showDial?: boolean;
+  /** 判断某国家/地区是否可选中并关闭弹层；返回 false 时停留在选择页，改为触发 onIneligible */
+  isSelectable?: (code: CountryCode) => boolean;
+  /** 选中了 isSelectable 判定为不可选的国家/地区时触发（如仅做提示，不真正切换） */
+  onIneligible?: (code: CountryCode) => void;
 }
 
 /** 国家/地区选择——独立全屏列表页（业内标准形态），支持搜索，而非下拉菜单 */
-export default function CountryCodeSheet({ open, value, onSelect, onClose, showDial = true }: Props) {
+export default function CountryCodeSheet({
+  open,
+  value,
+  onSelect,
+  onClose,
+  showDial = true,
+  isSelectable,
+  onIneligible,
+}: Props) {
   const isDark = useStore((s) => s.isDark);
   const lang = useStore((s) => s.lang);
   const zh = lang !== "en";
@@ -94,6 +106,10 @@ export default function CountryCodeSheet({ open, value, onSelect, onClose, showD
                   key={c.code}
                   type="button"
                   onClick={() => {
+                    if (isSelectable && !isSelectable(c.code)) {
+                      onIneligible?.(c.code);
+                      return;
+                    }
                     onSelect(c.code);
                     setQuery("");
                     onClose();
