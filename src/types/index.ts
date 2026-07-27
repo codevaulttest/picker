@@ -1,3 +1,5 @@
+import type { VerifyStatus } from "@/lib/realName";
+
 export interface PkeLevel {
   level: number;
   originalName: string;
@@ -10,7 +12,7 @@ export interface UserProfile {
   userId: number;
   pkeId: string;
   realName: string;
-  isRealName: boolean;
+  verifyStatus: VerifyStatus;
   level: number;
   phone: string | null;
   email: string | null;

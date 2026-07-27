@@ -5,6 +5,16 @@ import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { THEME, BRAND } from "@/config/app.config";
 import { registerUser } from "@/lib/mockBackend";
+import { VERIFY_STATUS_META, type VerifyStatus } from "@/lib/realName";
+
+const VERIFY_STATUS_OPTIONS: { value: VerifyStatus; short: string }[] = [
+  { value: -1, short: "未完成" },
+  { value: 0, short: "待审核" },
+  { value: 1, short: "通过" },
+  { value: 2, short: "拒绝" },
+  { value: 4, short: "资料不全" },
+  { value: 6, short: "已过期" },
+];
 
 /** 开发者调试面板 — 右下角贴边绿色半胶囊，仅本次会话隐藏（刷新后重新展示） */
 export default function DevPanel() {
@@ -20,9 +30,9 @@ export default function DevPanel() {
 
   if (hidden) return null;
 
-  const handleRealNameChange = (on: boolean) => {
-    if (user) setUser({ ...user, isRealName: on });
-    toast({ title: on ? "已切换为已实名" : "已切换为未实名" });
+  const handleVerifyStatusChange = (status: VerifyStatus) => {
+    if (user) setUser({ ...user, verifyStatus: status });
+    toast({ title: `已切换为「${VERIFY_STATUS_META[status].label}」` });
   };
 
   const handleResetTodayCheckIn = () => {
@@ -99,14 +109,25 @@ export default function DevPanel() {
             />
           </div>
 
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-body text-game-ink-secondary">实名认证状态</span>
-            <Switch
-              checked={!!user?.isRealName}
-              onCheckedChange={handleRealNameChange}
-              disabled={!user}
-              aria-label="实名认证状态"
-            />
+          <div className="mb-3">
+            <span className="text-body text-game-ink-secondary block mb-1.5">实名认证状态</span>
+            <div className="flex flex-wrap gap-1">
+              {VERIFY_STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={!user}
+                  onClick={() => handleVerifyStatusChange(opt.value)}
+                  className={`h-6 px-1.5 rounded-button text-[10px] font-bold disabled:opacity-40 ${
+                    user?.verifyStatus === opt.value
+                      ? "bg-game-primary text-white"
+                      : "bg-game-bg-muted text-game-ink-secondary"
+                  }`}
+                >
+                  {opt.short}
+                </button>
+              ))}
+            </div>
           </div>
 
           <button

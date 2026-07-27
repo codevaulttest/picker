@@ -38,6 +38,9 @@ export const GAME = {
   /** DESIGN.md error — 破坏性文案 / 告警（非 cool red-500） */
   error: "#DC5B4C",
   errorSoft: "#FCEFED",
+  /** DESIGN.md warning — icon/fill only, 2.64:1 达不到正文对比度 */
+  warning: "#E8873F",
+  warningSoft: "#FCEEDF",
   ink: "#171A21",
   inkSecondary: "#707681",
   inkTertiary: "#9AA0AA",
@@ -88,6 +91,7 @@ export const GAME = {
   infoSoftDark: "#1E2A38",
   successSoftDark: "#1A2E24",
   errorSoftDark: "#3A2220",
+  warningSoftDark: "#3A2A1E",
   shadowWarmDark: "0 10px 35px 0 rgba(6,8,12,0.45)",
   overlayDark: "rgba(6,8,12,0.64)",
   focusRingDark: "rgba(22,113,248,0.45)",
@@ -417,7 +421,7 @@ export const MINI_PROGRAMS: MiniProgramConfig[] = [
 // ═══════════════════════════════════════════════════════════
 // 安全中心菜单配置
 // ═══════════════════════════════════════════════════════════
-export type SecurityStatusTone = "success" | "muted" | "action";
+export type SecurityStatusTone = "success" | "muted" | "action" | "warning" | "error";
 
 export interface SecurityMenuConfig {
   key: string;
@@ -426,7 +430,7 @@ export interface SecurityMenuConfig {
   color: string;
   bg: string;
   status?: string;
-  /** 状态文案色阶：success=已完成 / muted=未开启 / action=引导操作 */
+  /** 状态文案色阶：success=已完成 / muted=未开启 / action=引导操作 / warning=需关注 / error=被拒绝 */
   statusTone?: SecurityStatusTone;
 }
 

@@ -14,6 +14,7 @@ import { signIn } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { TEXT, GAME } from "@/config/app.config";
+import { isVerified } from "@/lib/realName";
 import signInGiftReward from "@/assets/illustrations/signin-gift-reward.webp";
 
 const CHECKIN_REMINDER_KEY = "pke_checkin_reminder";
@@ -43,7 +44,7 @@ export default function SignInDialog({ open, reward, onClose, onGoRealName }: Pr
   );
   const [showFaceScan, setShowFaceScan] = useState(false);
 
-  const isRealName = Boolean(user?.isRealName);
+  const isRealName = isVerified(user?.verifyStatus);
   const rewardLabel = formatReward(reward);
 
   const handleReminderChange = (on: boolean) => {

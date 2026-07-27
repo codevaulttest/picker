@@ -36,6 +36,7 @@ colors:
   error: "#DC5B4C"
   error-soft: "#FCEFED"
   warning: "#E8873F"
+  warning-soft: "#FCEEDF" # light tint of warning, same derivation as error-soft — icon/status-card wash only, never bare text
   info: "#3A7BD5"
   info-soft: "#EAF1FB"
   shadow-warm: "rgba(22,113,248,0.10)" # name predates the blue rebrand — value is now a soft brand-blue glow, not a warm tint; kept the name to avoid a token rename across every component that references it
@@ -63,6 +64,7 @@ colors:
   info-soft-dark: "#1E2A38"
   success-soft-dark: "#1A2E24"
   error-soft-dark: "#3A2220"
+  warning-soft-dark: "#3A2A1E"
   # Elevation / scrim on dark
   shadow-warm-dark: "rgba(6,8,12,0.45)"
   overlay-dark: "rgba(6,8,12,0.64)"

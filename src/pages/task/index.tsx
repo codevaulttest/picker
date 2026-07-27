@@ -9,6 +9,7 @@ import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { THEME, TASK_CATEGORIES, getLevel } from "@/config/app.config";
 import { useI18n } from "@/hooks/useI18n";
+import { isVerified } from "@/lib/realName";
 
 /** 服务分类详情说明 */
 const SERVICE_DETAILS: Record<string, { desc: string; priceRange: string; unit: string }> = {
@@ -275,7 +276,7 @@ export default function TaskPage() {
             </div>
 
             {/* 首次发起提示 */}
-            {!user?.isRealName && (
+            {!isVerified(user?.verifyStatus) && (
               <div className={`p-3 rounded-xl text-xs ${isDark ? "bg-blue-900/30 text-blue-300 border border-blue-800" : "bg-blue-50 text-blue-700"}`}>
                 <p className="font-bold mb-1">{lang === "en" ? "First-time posting requires identity verification" : "首次发起任务需提交个人信息"}</p>
                 <p>{lang === "en" ? "You can quickly use your verified P-ke account info" : "可快捷使用已实名的P客账号身份信息"}</p>

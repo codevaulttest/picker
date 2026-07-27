@@ -4,13 +4,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/stores";
 import { getLevel, GAME, BRAND } from "@/config/app.config";
 import { resolveDisplayPkeId } from "@/lib/pke-id";
+import { isVerified, type VerifyStatus } from "@/lib/realName";
 import EditProfileDialog from "@/components/dialogs/EditProfileDialog";
 
 interface Props {
   avatar?: string;
   name: string;
   pkeId?: string;
-  isRealName?: boolean;
+  verifyStatus?: VerifyStatus;
   level: number;
   /** false while logged out — taps open the login flow instead of profile editing */
   loggedIn?: boolean;
@@ -23,7 +24,7 @@ export default function PageHeader({
   avatar,
   name,
   pkeId,
-  isRealName,
+  verifyStatus,
   level,
   loggedIn = true,
   onAvatarClick,
@@ -73,6 +74,14 @@ export default function PageHeader({
   const zh = lang !== "en";
   const chevronClass = isDark ? "text-game-ink-disabled-dark" : "text-game-ink-disabled";
   const unverifiedColor = isDark ? GAME.inkDisabledDark : GAME.inkDisabled;
+  const verified = isVerified(verifyStatus);
+  const badgeColor = verified
+    ? GAME.primary
+    : verifyStatus === 2
+      ? GAME.error
+      : verifyStatus === 4 || verifyStatus === 6
+        ? GAME.warning
+        : unverifiedColor;
 
   return (
     <header className="relative px-3.5 pt-3.5 pb-3 transition-colors">
@@ -123,11 +132,9 @@ export default function PageHeader({
                     <BadgeCheck
                       size={20}
                       className="flex-shrink-0"
-                      style={{
-                        color: isRealName ? GAME.primary : unverifiedColor,
-                      }}
-                      fill={isRealName ? GAME.primary : "transparent"}
-                      stroke={isRealName ? GAME.onPrimary : unverifiedColor}
+                      style={{ color: badgeColor }}
+                      fill={verified ? GAME.primary : "transparent"}
+                      stroke={verified ? GAME.onPrimary : badgeColor}
                     />
                   )}
                 </button>

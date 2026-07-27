@@ -13,6 +13,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
 import SwitchAccountSheet from "@/components/dialogs/SwitchAccountSheet";
+import { isVerified } from "@/lib/realName";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ export default function SettingsPage() {
         avatar={user?.avatar}
         name={!user?.name || user.name === "游客" || user.name === "Guest" ? guestName : user.name}
         pkeId={user?.pkeId || pkeId || undefined}
-        isRealName={user?.isRealName}
+        verifyStatus={user?.verifyStatus}
         level={user?.level || 1}
         loggedIn={!!user}
         onAvatarClick={() => navigate("/login")}
@@ -98,19 +99,47 @@ export default function SettingsPage() {
         onNameChange={(name) => setUser({ ...user, name } as any)}
       />
 
-      {user && !user.isRealName && (
+      {user && !isVerified(user.verifyStatus) && user.verifyStatus !== 0 && (
         <section className="mx-3.5 mt-1 flex-shrink-0">
           <button
             onClick={() => setShowRealName(true)}
             className="w-full flex items-center gap-2.5 px-4 py-3 rounded-card transition-colors active:brightness-95"
-            style={{ background: isDark ? GAME.rewardGoldSoftDark : GAME.rewardGoldSoft }}
+            style={{
+              background:
+                user.verifyStatus === 2
+                  ? isDark ? GAME.errorSoftDark : GAME.errorSoft
+                  : user.verifyStatus === 4 || user.verifyStatus === 6
+                    ? isDark ? GAME.warningSoftDark : GAME.warningSoft
+                    : isDark ? GAME.rewardGoldSoftDark : GAME.rewardGoldSoft,
+            }}
           >
-            <IdCard size={18} className="flex-shrink-0" style={{ color: GAME.rewardGold }} />
+            <IdCard
+              size={18}
+              className="flex-shrink-0"
+              style={{ color: user.verifyStatus === 2 ? GAME.error : user.verifyStatus === 4 || user.verifyStatus === 6 ? GAME.warning : GAME.rewardGold }}
+            />
             <span className={`flex-1 text-left text-grid-label ${ink}`}>
-              {t.settings.verifyBanner}
+              {user.verifyStatus === 2
+                ? "认证被拒绝，去重新提交"
+                : user.verifyStatus === 4
+                  ? "资料不完整，去完善资料"
+                  : user.verifyStatus === 6
+                    ? "认证已过期，去重新认证"
+                    : t.settings.verifyBanner}
             </span>
-            <ChevronRight size={16} style={{ color: GAME.rewardGold }} />
+            <ChevronRight size={16} style={{ color: user.verifyStatus === 2 ? GAME.error : user.verifyStatus === 4 || user.verifyStatus === 6 ? GAME.warning : GAME.rewardGold }} />
           </button>
+        </section>
+      )}
+      {user && user.verifyStatus === 0 && (
+        <section className="mx-3.5 mt-1 flex-shrink-0">
+          <div
+            className="w-full flex items-center gap-2.5 px-4 py-3 rounded-card"
+            style={{ background: isDark ? GAME.bgMutedDark : GAME.bgMuted }}
+          >
+            <IdCard size={18} className="flex-shrink-0" style={{ color: isDark ? GAME.inkSecondaryDark : GAME.inkSecondary }} />
+            <span className={`flex-1 text-left text-grid-label ${inkSec}`}>认证审核中，请耐心等待</span>
+          </div>
         </section>
       )}
 
@@ -182,7 +211,7 @@ export default function SettingsPage() {
         onClose={() => setShowRealName(false)}
         onComplete={() => {
           setShowRealName(false);
-          if (user) setUser({ ...user, isRealName: true } as any);
+          if (user) setUser({ ...user, verifyStatus: 1 } as any);
           toast({ title: "实名认证成功" });
         }}
       />

@@ -10,6 +10,32 @@ export interface RealNameInfo {
   expireAt: string;
 }
 
+/** 对齐后端 AuthStatus：-1未完成，0等待审核，1通过，2拒绝，4资料不完整，6认证过期 */
+export type VerifyStatus = -1 | 0 | 1 | 2 | 4 | 6;
+
+/** 是否已通过认证（可享受认证权益），其余一律视为需要（重新）认证 */
+export function isVerified(status: VerifyStatus | undefined | null): boolean {
+  return status === 1;
+}
+
+export type VerifyStatusTone = "success" | "muted" | "action" | "warning" | "error";
+
+export interface VerifyStatusMeta {
+  label: string;
+  tone: VerifyStatusTone;
+  /** 点击后打开的弹窗/流程类型 */
+  action: "submit" | "pending" | "detail" | "rejected" | "incomplete" | "expired";
+}
+
+export const VERIFY_STATUS_META: Record<VerifyStatus, VerifyStatusMeta> = {
+  [-1]: { label: "去认证", tone: "action", action: "submit" },
+  0: { label: "审核中", tone: "muted", action: "pending" },
+  1: { label: "已认证", tone: "success", action: "detail" },
+  2: { label: "已拒绝", tone: "error", action: "rejected" },
+  4: { label: "资料不完整", tone: "warning", action: "incomplete" },
+  6: { label: "已过期", tone: "warning", action: "expired" },
+};
+
 // 演示用姓名池：真实后端接入后由实名认证结果返回真实姓名
 const DEMO_NAMES = ["王magic", "李思远", "张雨桐", "陈嘉豪", "刘梓萌"];
 const REAL_NAME_VALID_YEARS = 3;
@@ -30,14 +56,15 @@ function formatDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-/** 生成演示用实名认证信息（姓名脱敏、到期时间为认证日起 3 年） */
+/** 生成演示用实名认证信息（姓名脱敏、到期时间为认证日起 3 年；expired 为 true 时生成一个已过去的到期日，用于演示"认证过期"态） */
 export function createDemoRealNameInfo(
   seed?: string,
   region: CountryCode = DEFAULT_COUNTRY,
-  documentType: DocumentType = "idcard"
+  documentType: DocumentType = "idcard",
+  expired = false
 ): RealNameInfo {
   const expire = new Date();
-  expire.setFullYear(expire.getFullYear() + REAL_NAME_VALID_YEARS);
+  expire.setFullYear(expire.getFullYear() + (expired ? -1 : REAL_NAME_VALID_YEARS));
   return {
     region,
     documentType,

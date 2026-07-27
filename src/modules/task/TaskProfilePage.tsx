@@ -5,6 +5,7 @@
 import { useNavigate } from "react-router";
 import { Wallet, Ticket, Heart, MapPin, MessageCircle, HelpCircle, Settings, ChevronRight, LogOut, Shield, X, ChevronLeft } from "lucide-react";
 import { useStore } from "@/stores";
+import { isVerified } from "@/lib/realName";
 
 const MENU_ITEMS = [
   { key: "wallet", label: "我的钱包", icon: Wallet, color: "#F59E0B", desc: "余额、银行卡" },
@@ -56,7 +57,7 @@ export default function TaskProfilePage() {
               <p className="text-white/70 text-xs mt-0.5">P客账号: {user?.pkeId || "19900****"}</p>
               <div className="flex items-center gap-1 mt-1">
                 <Shield size={10} className="text-white/70" />
-                <span className="text-white/70 text-[10px]">{user?.isRealName ? "已实名" : "未实名"}</span>
+                <span className="text-white/70 text-[10px]">{isVerified(user?.verifyStatus) ? "已实名" : "未实名"}</span>
               </div>
             </div>
           </div>

@@ -173,7 +173,7 @@ export async function registerUser(name: string) {
     userId,
     pkeId,
     realName: "",
-    isRealName: false,
+    verifyStatus: -1,
     level: 1,
     phone: null,
     email: null,

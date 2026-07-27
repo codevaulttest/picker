@@ -83,6 +83,7 @@ module.exports = {
           error: "#DC5B4C",
           "error-soft": "#FCEFED",
           warning: "#E8873F",
+          "warning-soft": "#FCEEDF",
           info: "#3A7BD5",
           "info-soft": "#EAF1FB",
           overlay: "rgba(23,26,33,0.45)",
@@ -103,6 +104,7 @@ module.exports = {
           "info-soft-dark": "#1E2A38",
           "success-soft-dark": "#1A2E24",
           "error-soft-dark": "#3A2220",
+          "warning-soft-dark": "#3A2A1E",
           // Legacy aliases (same values) — prefer *-dark names above
           "surface-soft-dark": "#21242A",
           "hairline-dark": "#2D313A",

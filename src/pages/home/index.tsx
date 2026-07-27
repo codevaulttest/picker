@@ -10,6 +10,7 @@ import { GAME, HOME_FEATURES, BRAND, getLevel, MINI_PROGRAMS } from "@/config/ap
 import { useI18n } from "@/hooks/useI18n";
 import SignInDialog from "@/components/dialogs/SignInDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
+import { isVerified } from "@/lib/realName";
 import CheckInRulesDialog from "@/components/dialogs/CheckInRulesDialog";
 import checkInGiftIcon from "@/assets/svg/svg/custom/check-in-gift.svg?url";
 
@@ -258,7 +259,7 @@ export default function HomePage() {
         onClose={() => setShowSignIn(false)}
         onGoRealName={() => { setShowSignIn(false); setShowRealName(true); }}
       />
-      <RealNameDialog open={showRealName} onComplete={() => { setShowRealName(false); if (user) setUser({ ...user, isRealName: true } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
+      <RealNameDialog open={showRealName} onComplete={() => { setShowRealName(false); if (user) setUser({ ...user, verifyStatus: 1 } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
       <CheckInRulesDialog open={showCheckInRules} onClose={() => setShowCheckInRules(false)} />
 
       {/* 下拉双语义：小幅/快速下拉→内容刷新指示；继续下拉过阈值→贴顶展开至视口 80% 的小程序面板 */}
@@ -355,7 +356,7 @@ export default function HomePage() {
                 <span className="text-hud-label">{lvConfig.cnName}</span>
               </span>
             </button>
-            {user.isRealName ? (
+            {isVerified(user.verifyStatus) ? (
               <BadgeCheck
                 size={18}
                 className="flex-shrink-0"
@@ -373,9 +374,22 @@ export default function HomePage() {
                 <BadgeCheck
                   size={18}
                   className="flex-shrink-0"
-                  style={{ color: isDark ? GAME.inkDisabledDark : GAME.inkDisabled }}
+                  style={{
+                    color:
+                      user.verifyStatus === 2
+                        ? GAME.error
+                        : user.verifyStatus === 4 || user.verifyStatus === 6
+                          ? GAME.warning
+                          : isDark ? GAME.inkDisabledDark : GAME.inkDisabled,
+                  }}
                   fill="transparent"
-                  stroke={isDark ? GAME.inkDisabledDark : GAME.inkDisabled}
+                  stroke={
+                    user.verifyStatus === 2
+                      ? GAME.error
+                      : user.verifyStatus === 4 || user.verifyStatus === 6
+                        ? GAME.warning
+                        : isDark ? GAME.inkDisabledDark : GAME.inkDisabled
+                  }
                 />
               </button>
             )}
@@ -454,7 +468,7 @@ export default function HomePage() {
               <button
                 onClick={() => {
                   if (!user) { navigate("/login"); return; }
-                  if (user.isRealName) setShowSignIn(true); else setShowRealName(true);
+                  if (isVerified(user.verifyStatus)) setShowSignIn(true); else setShowRealName(true);
                 }}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-pill text-caption font-bold flex-shrink-0 text-white shadow-sm active:scale-95 transition-all"
                 style={{

@@ -26,7 +26,7 @@ import EmailBindDialog from "@/components/dialogs/EmailBindDialog";
 import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
 import RealNameDialog, { type RealNameInfo } from "@/components/dialogs/RealNameDialog";
 import RealNameInfoDialog from "@/components/dialogs/RealNameInfoDialog";
-import { createDemoRealNameInfo } from "@/lib/realName";
+import { createDemoRealNameInfo, isVerified, VERIFY_STATUS_META } from "@/lib/realName";
 import VerifyIdentityDialog from "@/components/dialogs/VerifyIdentityDialog";
 import FaceLoginConsentDialog from "@/components/dialogs/FaceLoginConsentDialog";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
@@ -69,6 +69,10 @@ function statusColor(tone: SecurityStatusTone | undefined, isDark: boolean): str
       return GAME.success;
     case "action":
       return GAME.primaryText;
+    case "warning":
+      return GAME.warning;
+    case "error":
+      return GAME.error;
     case "muted":
     default:
       return isDark ? GAME.inkSecondaryDark : GAME.inkSecondary;
@@ -103,6 +107,7 @@ export default function SecurityPage() {
   const [showEmailBind, setShowEmailBind] = useState(false);
   const [showPhoneBind, setShowPhoneBind] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
+  const [skipUnlockPay, setSkipUnlockPay] = useState(false);
   const [showRealNameInfo, setShowRealNameInfo] = useState(false);
   const [realNameInfo, setRealNameInfo] = useState<RealNameInfo | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -228,9 +233,12 @@ export default function SecurityPage() {
     });
   };
 
-  // 已认证但尚未在本次流程中采集过认证信息（如历史数据）时，用演示数据兜底展示
+  // 已认证/已过期但尚未在本次流程中采集过认证信息（如历史数据）时，用演示数据兜底展示
   const displayedRealNameInfo =
-    realNameInfo ?? (user?.isRealName ? createDemoRealNameInfo(user.pkeId) : null);
+    realNameInfo ??
+    (user && (isVerified(user.verifyStatus) || user.verifyStatus === 6)
+      ? createDemoRealNameInfo(user.pkeId, undefined, undefined, user.verifyStatus === 6)
+      : null);
 
   return (
     <div className="min-h-full flex flex-col transition-colors">
@@ -304,10 +312,9 @@ export default function SecurityPage() {
                   );
                 }
 
+                const verifyMeta = user ? VERIFY_STATUS_META[user.verifyStatus] : undefined;
                 const status = isRealname
-                  ? user?.isRealName
-                    ? "已认证"
-                    : "去认证"
+                  ? verifyMeta?.label ?? "去认证"
                   : isEmail
                     ? user?.email
                       ? maskEmail(user.email)
@@ -318,9 +325,7 @@ export default function SecurityPage() {
                         : "未绑定"
                       : item.status;
                 const tone: SecurityStatusTone | undefined = isRealname
-                  ? user?.isRealName
-                    ? "success"
-                    : "action"
+                  ? verifyMeta?.tone ?? "action"
                   : isEmail
                     ? "muted"
                     : isPhone
@@ -333,7 +338,14 @@ export default function SecurityPage() {
                     type="button"
                     onClick={
                       isRealname
-                        ? () => (user?.isRealName ? setShowRealNameInfo(true) : setShowRealName(true))
+                        ? () => {
+                            if (verifyMeta?.action === "submit") {
+                              setSkipUnlockPay(false);
+                              setShowRealName(true);
+                            } else {
+                              setShowRealNameInfo(true);
+                            }
+                          }
                         : isEmail
                           ? () => setShowEmailBind(true)
                           : isPhone
@@ -522,22 +534,29 @@ export default function SecurityPage() {
 
       <RealNameDialog
         open={showRealName}
+        skipUnlockPay={skipUnlockPay}
         onClose={() => setShowRealName(false)}
         onComplete={(info) => {
           setShowRealName(false);
           setRealNameInfo(info);
-          if (user) setUser({ ...user, isRealName: true } as any);
+          if (user) setUser({ ...user, verifyStatus: 1 } as any);
           toast({ title: "实名认证成功" });
         }}
       />
 
       <RealNameInfoDialog
         open={showRealNameInfo}
+        status={user?.verifyStatus}
         region={displayedRealNameInfo?.region}
         documentType={displayedRealNameInfo?.documentType}
         maskedName={displayedRealNameInfo?.maskedName}
         expireAt={displayedRealNameInfo?.expireAt}
         onClose={() => setShowRealNameInfo(false)}
+        onReverify={() => {
+          setShowRealNameInfo(false);
+          setSkipUnlockPay(user?.verifyStatus === 2 || user?.verifyStatus === 4);
+          setShowRealName(true);
+        }}
       />
 
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>

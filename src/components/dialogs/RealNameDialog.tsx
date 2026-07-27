@@ -17,6 +17,8 @@ export type { RealNameInfo };
 
 interface Props {
   open: boolean;
+  /** 重新提交（认证被拒绝/资料不完整）时无需再付一次解锁费用，直接跳过支付/认证码步骤 */
+  skipUnlockPay?: boolean;
   onComplete: (info: RealNameInfo) => void;
   onClose: () => void;
 }
@@ -28,7 +30,7 @@ type CodeType = "pke" | "vault";
 const REAL_NAME_PAY_COST = 500;
 
 /** 实名认证全屏流程 - 支持调相册/调摄像头/可关闭 */
-export default function RealNameDialog({ open, onComplete, onClose }: Props) {
+export default function RealNameDialog({ open, skipUnlockPay = false, onComplete, onClose }: Props) {
   const { toast } = useToast();
   const isDark = useStore((s) => s.isDark);
   const setHideBottomNav = useStore((s) => s.setHideBottomNav);
@@ -118,6 +120,14 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
     }
   };
 
+  const finishVerification = () => {
+    setStep("done");
+    setTimeout(() => {
+      onComplete(createDemoRealNameInfo(pkeId, country, documentType));
+      reset();
+    }, 1500);
+  };
+
   const handleNext = () => {
     if (step === "region") {
       setStep("doc");
@@ -141,15 +151,15 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
           (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
         }
         setStreamActive(false);
-        setStep("code");
+        if (skipUnlockPay) {
+          finishVerification();
+        } else {
+          setStep("code");
+        }
       }
     } else if (step === "code" && unlockMethod === "code" && authCode.trim()) {
       if (authCode.length === 12) {
-        setStep("done");
-        setTimeout(() => {
-          onComplete(createDemoRealNameInfo(pkeId, country, documentType));
-          reset();
-        }, 1500);
+        finishVerification();
       } else {
         toast({ title: "认证码格式错误", description: "请输入12位字母+数字认证码", variant: "destructive" });
       }
@@ -168,13 +178,13 @@ export default function RealNameDialog({ open, onComplete, onClose }: Props) {
         (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
       }
       setStreamActive(false);
-      setStep("code");
+      if (skipUnlockPay) {
+        finishVerification();
+      } else {
+        setStep("code");
+      }
     } else if (step === "code") {
-      setStep("done");
-      setTimeout(() => {
-        onComplete(createDemoRealNameInfo(pkeId, country, documentType));
-        reset();
-      }, 1500);
+      finishVerification();
     }
   };
 
