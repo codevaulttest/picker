@@ -11,9 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 import { getUserProfile } from "@/lib/mockBackend";
 import PageHeader from "@/components/layout/PageHeader";
 import PullToRefresh from "@/components/layout/PullToRefresh";
-import RealNameDialog from "@/components/dialogs/RealNameDialog";
+import RealNameDialog, { type RealNameInfo } from "@/components/dialogs/RealNameDialog";
+import RealNameInfoDialog from "@/components/dialogs/RealNameInfoDialog";
 import SwitchAccountSheet from "@/components/dialogs/SwitchAccountSheet";
-import { isExpiringSoon, isVerified } from "@/lib/realName";
+import { createDemoRealNameInfo, extendExpireByOneYear, isExpiringSoon, isVerified } from "@/lib/realName";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -21,6 +22,9 @@ export default function SettingsPage() {
   const { t } = useI18n();
   const [showSwitchAccount, setShowSwitchAccount] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
+  const [renewMode, setRenewMode] = useState(false);
+  const [showRealNameInfo, setShowRealNameInfo] = useState(false);
+  const [realNameInfo, setRealNameInfo] = useState<RealNameInfo | null>(null);
 
   const isDark = useStore((s) => s.isDark);
   const user = useStore((s) => s.user);
@@ -53,6 +57,16 @@ export default function SettingsPage() {
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
   const inkSec = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
   const inkDis = isDark ? "text-game-ink-disabled-dark" : "text-game-ink-disabled";
+
+  // 已认证但尚未在本次访问中采集过认证信息时，用演示数据兜底展示；到期日优先用账号上持久化的 verifyExpireAt
+  const displayedRealNameInfo =
+    realNameInfo ??
+    (user && isVerified(user.verifyStatus)
+      ? {
+          ...createDemoRealNameInfo(user.pkeId),
+          ...(user.verifyExpireAt ? { expireAt: user.verifyExpireAt } : {}),
+        }
+      : null);
 
   const menuItems = [
     {
@@ -145,7 +159,7 @@ export default function SettingsPage() {
       {user && user.verifyStatus === 1 && isExpiringSoon(user.verifyExpireAt) && (
         <section className="mx-3.5 mt-1 flex-shrink-0">
           <button
-            onClick={() => navigate("/security")}
+            onClick={() => setShowRealNameInfo(true)}
             className="w-full flex items-center gap-2.5 px-4 py-3 rounded-card transition-colors active:brightness-95"
             style={{ background: isDark ? GAME.warningSoftDark : GAME.warningSoft }}
           >
@@ -223,11 +237,40 @@ export default function SettingsPage() {
 
       <RealNameDialog
         open={showRealName}
-        onClose={() => setShowRealName(false)}
+        mode={renewMode ? "renew" : "verify"}
+        onClose={() => {
+          setShowRealName(false);
+          setRenewMode(false);
+        }}
         onComplete={(info) => {
           setShowRealName(false);
+          setRealNameInfo(info);
           if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt } as any);
           toast({ title: "实名认证成功" });
+        }}
+        onRenewComplete={() => {
+          setShowRealName(false);
+          setRenewMode(false);
+          if (!displayedRealNameInfo) return;
+          const renewedExpireAt = extendExpireByOneYear(displayedRealNameInfo.expireAt);
+          setRealNameInfo({ ...displayedRealNameInfo, expireAt: renewedExpireAt });
+          if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: renewedExpireAt } as any);
+          toast({ title: "已续费，有效期延长 1 年" });
+        }}
+      />
+
+      <RealNameInfoDialog
+        open={showRealNameInfo}
+        status={user?.verifyStatus}
+        region={displayedRealNameInfo?.region}
+        documentType={displayedRealNameInfo?.documentType}
+        maskedName={displayedRealNameInfo?.maskedName}
+        expireAt={displayedRealNameInfo?.expireAt}
+        onClose={() => setShowRealNameInfo(false)}
+        onRenew={() => {
+          setShowRealNameInfo(false);
+          setRenewMode(true);
+          setShowRealName(true);
         }}
       />
     </div>
