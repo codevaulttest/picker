@@ -22,6 +22,7 @@ interface Props {
   expireAt?: string | null;
   onClose: () => void;
   onReverify?: () => void;
+  onRenew?: () => void;
 }
 
 const CTA_STYLE = {
@@ -45,6 +46,7 @@ export default function RealNameInfoDialog({
   expireAt,
   onClose,
   onReverify,
+  onRenew,
 }: Props) {
   const isDark = useStore((s) => s.isDark);
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
@@ -138,6 +140,25 @@ export default function RealNameInfoDialog({
                 onClick={onReverify}
               >
                 {statusCopy?.cta ?? "重新认证"}
+              </Button>
+            </>
+          ) : meta?.action === "detail" ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 flex-1 rounded-button text-section-title"
+                onClick={onClose}
+              >
+                关闭
+              </Button>
+              <Button
+                type="button"
+                className="h-12 flex-1 rounded-button text-section-title border-0"
+                style={CTA_STYLE}
+                onClick={onRenew}
+              >
+                续费
               </Button>
             </>
           ) : (

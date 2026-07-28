@@ -26,7 +26,7 @@ import EmailBindDialog from "@/components/dialogs/EmailBindDialog";
 import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
 import RealNameDialog, { type RealNameInfo } from "@/components/dialogs/RealNameDialog";
 import RealNameInfoDialog from "@/components/dialogs/RealNameInfoDialog";
-import { createDemoRealNameInfo, isVerified, VERIFY_STATUS_META } from "@/lib/realName";
+import { createDemoRealNameInfo, extendExpireByOneYear, isVerified, VERIFY_STATUS_META } from "@/lib/realName";
 import VerifyIdentityDialog from "@/components/dialogs/VerifyIdentityDialog";
 import FaceLoginConsentDialog from "@/components/dialogs/FaceLoginConsentDialog";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
@@ -108,6 +108,7 @@ export default function SecurityPage() {
   const [showPhoneBind, setShowPhoneBind] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
   const [skipUnlockPay, setSkipUnlockPay] = useState(false);
+  const [renewMode, setRenewMode] = useState(false);
   const [showRealNameInfo, setShowRealNameInfo] = useState(false);
   const [realNameInfo, setRealNameInfo] = useState<RealNameInfo | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -341,6 +342,7 @@ export default function SecurityPage() {
                         ? () => {
                             if (!verifyMeta || verifyMeta.action === "submit") {
                               setSkipUnlockPay(false);
+                              setRenewMode(false);
                               setShowRealName(true);
                             } else {
                               setShowRealNameInfo(true);
@@ -535,12 +537,23 @@ export default function SecurityPage() {
       <RealNameDialog
         open={showRealName}
         skipUnlockPay={skipUnlockPay}
-        onClose={() => setShowRealName(false)}
+        mode={renewMode ? "renew" : "verify"}
+        onClose={() => {
+          setShowRealName(false);
+          setRenewMode(false);
+        }}
         onComplete={(info) => {
           setShowRealName(false);
           setRealNameInfo(info);
           if (user) setUser({ ...user, verifyStatus: 1 } as any);
           toast({ title: "实名认证成功" });
+        }}
+        onRenewComplete={() => {
+          setShowRealName(false);
+          setRenewMode(false);
+          if (!displayedRealNameInfo) return;
+          setRealNameInfo({ ...displayedRealNameInfo, expireAt: extendExpireByOneYear(displayedRealNameInfo.expireAt) });
+          toast({ title: "已续费，有效期延长 1 年" });
         }}
       />
 
@@ -555,6 +568,11 @@ export default function SecurityPage() {
         onReverify={() => {
           setShowRealNameInfo(false);
           setSkipUnlockPay(user?.verifyStatus === 2 || user?.verifyStatus === 4);
+          setShowRealName(true);
+        }}
+        onRenew={() => {
+          setShowRealNameInfo(false);
+          setRenewMode(true);
           setShowRealName(true);
         }}
       />

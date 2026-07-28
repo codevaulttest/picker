@@ -94,7 +94,7 @@ export default function FaceScanDialog({ open, onComplete, onClose }: Props) {
   const bgPage = isDark ? "bg-game-bg-page-dark" : "bg-game-bg-page";
 
   return (
-    <div className={`fixed inset-0 z-[60] flex flex-col transition-colors ${bgPage}`}>
+    <div className={`fixed inset-0 z-[60] flex flex-col max-w-md mx-auto transition-colors ${bgPage}`}>
       <header className="relative px-3.5 pt-3.5 pb-2 flex-shrink-0">
         <div
           className="absolute inset-0 pointer-events-none"

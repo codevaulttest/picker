@@ -1,6 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Wallet, KeyRound, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
@@ -19,7 +29,10 @@ interface Props {
   open: boolean;
   /** 重新提交（认证被拒绝/资料不完整）时无需再付一次解锁费用，直接跳过支付/认证码步骤 */
   skipUnlockPay?: boolean;
+  /** renew：仅展示"支付/认证码"这一屏，付款或验证通过后直接完成续费，不进入国家/证件/人脸后续步骤 */
+  mode?: "verify" | "renew";
   onComplete: (info: RealNameInfo) => void;
+  onRenewComplete?: () => void;
   onClose: () => void;
 }
 
@@ -30,14 +43,28 @@ type CodeType = "pke" | "vault";
 const REAL_NAME_PAY_COST = 500;
 
 /** 实名认证全屏流程 - 支持调相册/调摄像头/可关闭 */
-export default function RealNameDialog({ open, skipUnlockPay = false, onComplete, onClose }: Props) {
+export default function RealNameDialog({ open, skipUnlockPay = false, mode = "verify", onComplete, onRenewComplete, onClose }: Props) {
+  const renewMode = mode === "renew";
   const { toast } = useToast();
   const isDark = useStore((s) => s.isDark);
   const setHideBottomNav = useStore((s) => s.setHideBottomNav);
   const assets = useStore((s) => s.assets);
   const updateAsset = useStore((s) => s.updateAsset);
   const pkeId = useStore((s) => s.user?.pkeId);
-  const [step, setStep] = useState<Step>(skipUnlockPay ? "region" : "code");
+
+  /** 是否已经解锁过认证（付过款/填对过认证码）——按账号持久化，退出后再次进入无需重复支付 */
+  const unlockedKey = pkeId ? `pke_realname_unlocked_${pkeId}` : null;
+  const readUnlocked = () => !!unlockedKey && localStorage.getItem(unlockedKey) === "1";
+  const markUnlocked = () => {
+    if (unlockedKey) localStorage.setItem(unlockedKey, "1");
+  };
+  const clearUnlocked = () => {
+    if (unlockedKey) localStorage.removeItem(unlockedKey);
+  };
+  const effectiveSkipUnlockPay = skipUnlockPay || readUnlocked();
+  const getInitialStep = (): Step => (renewMode ? "code" : effectiveSkipUnlockPay ? "region" : "code");
+
+  const [step, setStep] = useState<Step>(getInitialStep());
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [documentType, setDocumentType] = useState<DocumentType>(allowedDocumentTypes(DEFAULT_COUNTRY)[0]);
@@ -49,6 +76,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
   const [frontImg, setFrontImg] = useState<string | null>(null);
   const [backImg, setBackImg] = useState<string | null>(null);
   const [streamActive, setStreamActive] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
@@ -72,7 +100,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
   };
 
   const reset = useCallback(() => {
-    setStep(skipUnlockPay ? "region" : "code");
+    setStep(getInitialStep());
     setCountry(DEFAULT_COUNTRY);
     setDocumentType(allowedDocumentTypes(DEFAULT_COUNTRY)[0]);
     setUnlockMethod("code");
@@ -88,11 +116,33 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
       videoRef.current.srcObject = null;
     }
     setStreamActive(false);
-  }, [skipUnlockPay]);
+    // 注意：不清除"已解锁"标记，退出后重新进入无需再次支付
+  }, [skipUnlockPay, unlockedKey, renewMode]);
 
   const handleClose = () => {
     reset();
     onClose();
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current?.srcObject) {
+      (videoRef.current.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+    }
+    setStreamActive(false);
+  };
+
+  /** 返回按钮：已解锁认证后逐级退回上一屏，只有从第一屏（选择国家/地区）再退才是真正退出 */
+  const handleBack = () => {
+    if (step === "doc") {
+      setStep("region");
+    } else if (step === "face") {
+      stopCamera();
+      setStep("doc");
+    } else if (step === "region" && effectiveSkipUnlockPay) {
+      setShowExitConfirm(true);
+    } else {
+      handleClose();
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "front" | "back") => {
@@ -121,6 +171,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
   };
 
   const finishVerification = () => {
+    clearUnlocked();
     setStep("done");
     setTimeout(() => {
       onComplete(createDemoRealNameInfo(pkeId, country, documentType));
@@ -128,10 +179,23 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
     }, 1500);
   };
 
+  const finishRenew = () => {
+    setStep("done");
+    setTimeout(() => {
+      onRenewComplete?.();
+      reset();
+    }, 1500);
+  };
+
   const handleNext = () => {
     if (step === "code" && unlockMethod === "code" && authCode.trim()) {
       if (authCode.length === 12) {
-        setStep("region");
+        if (renewMode) {
+          finishRenew();
+        } else {
+          markUnlocked();
+          setStep("region");
+        }
       } else {
         toast({ title: "认证码格式错误", description: "请输入12位字母+数字认证码", variant: "destructive" });
       }
@@ -165,7 +229,12 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
   /** 仅演示环境使用：跳过当前步骤的校验/操作，直接进入下一步 */
   const handleSkip = () => {
     if (step === "code") {
-      setStep("region");
+      if (renewMode) {
+        finishRenew();
+      } else {
+        markUnlocked();
+        setStep("region");
+      }
     } else if (step === "region") {
       setStep("doc");
     } else if (step === "doc") {
@@ -190,7 +259,12 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
     setTimeout(() => {
       updateAsset("cv", balance - REAL_NAME_PAY_COST);
       setPaying(false);
-      setStep("region");
+      if (renewMode) {
+        finishRenew();
+      } else {
+        markUnlocked();
+        setStep("region");
+      }
     }, 600);
   };
 
@@ -198,10 +272,11 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
 
   useEffect(() => {
     if (!open) return;
-    setStep(skipUnlockPay ? "region" : "code");
+    setStep(getInitialStep());
     setHideBottomNav(true);
     return () => setHideBottomNav(false);
-  }, [open, skipUnlockPay, setHideBottomNav]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, skipUnlockPay, unlockedKey, renewMode, setHideBottomNav]);
 
   if (!open) return null;
 
@@ -209,7 +284,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
   const bgPage = isDark ? "bg-game-bg-page-dark" : "bg-game-bg-page";
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col transition-colors ${bgPage}`}>
+    <div className={`fixed inset-0 z-50 flex flex-col max-w-md mx-auto transition-colors ${bgPage}`}>
       <header className="relative px-3.5 pt-3.5 pb-2 flex-shrink-0">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -219,23 +294,23 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
         <div className="relative z-10 flex items-center h-11">
           <button
             type="button"
-            onClick={handleClose}
+            onClick={handleBack}
             className="relative z-10 flex size-11 items-center justify-center -ml-2 rounded-button"
             aria-label="返回"
           >
             <ChevronLeft size={22} strokeWidth={2} className={ink} />
           </button>
           <h1 className={`pointer-events-none absolute inset-x-0 text-center text-section-title ${ink}`}>
-            {step === "code" && "支付或填写认证码"}
+            {step === "code" && (renewMode ? "续费实名认证" : "支付或填写认证码")}
             {step === "region" && "选择国家/地区"}
             {step === "doc" && "上传证件信息"}
             {step === "face" && "人脸核验"}
-            {step === "done" && "认证成功"}
+            {step === "done" && (renewMode ? "续费成功" : "认证成功")}
           </h1>
         </div>
 
-        {/* 进度条 */}
-        {step !== "done" && (
+        {/* 进度条：续费只有一屏，不展示分步进度 */}
+        {step !== "done" && !renewMode && (
           <div className="relative z-10 flex gap-1 mt-3">
             {[1, 2, 3, 4].map((i) => (
               <div
@@ -252,7 +327,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
           {/* 步骤1：支付 500 CV 或 输入认证码，解锁后续认证流程 */}
           {step === "code" && (
             <>
-              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>选择一种方式，解锁实名认证</p>
+              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{renewMode ? "选择一种方式，续费实名认证" : "选择一种方式，解锁实名认证"}</p>
 
               {/* 解锁方式：支付 / 认证码 —— 两张可展开的选择卡 */}
               <div
@@ -502,7 +577,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
               <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${isDark ? "bg-game-success-soft-dark" : "bg-game-success-soft"}`}>
                 <img src={checkSuccessIcon} alt="" width={40} height={40} />
               </div>
-              <p className="text-lg font-semibold text-game-success">实名认证成功</p>
+              <p className="text-lg font-semibold text-game-success">{renewMode ? "续费成功" : "实名认证成功"}</p>
             </div>
           )}
 
@@ -512,10 +587,12 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
               onClick={step === "code" && unlockMethod === "pay" ? handlePay : handleNext}
               disabled={step === "code" && unlockMethod === "pay" && paying}>
               {step === "code" && unlockMethod === "pay"
-                ? (paying ? "支付中…" : `支付 ${REAL_NAME_PAY_COST} CV 解锁认证`)
-                : step === "face"
-                  ? "完成认证"
-                  : "下一步"}
+                ? (paying ? "支付中…" : `支付 ${REAL_NAME_PAY_COST} CV ${renewMode ? "续费" : "解锁认证"}`)
+                : renewMode
+                  ? "确认续费"
+                  : step === "face"
+                    ? "完成认证"
+                    : "下一步"}
             </Button>
           )}
 
@@ -529,6 +606,34 @@ export default function RealNameDialog({ open, skipUnlockPay = false, onComplete
             </button>
           )}
       </div>
+
+      <AlertDialog open={showExitConfirm} onOpenChange={(v) => !v && setShowExitConfirm(false)}>
+        <AlertDialogContent
+          className={`rounded-card border-0 ${isDark ? "bg-game-bg-card-dark" : "bg-game-bg-card"}`}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className={ink}>退出认证？</AlertDialogTitle>
+            <AlertDialogDescription className={isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}>
+              已支付的解锁费用不会浪费，下次点击"去认证"可以直接继续填写资料，无需重新支付或验证。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row justify-end gap-2">
+            <AlertDialogCancel className="mt-0 flex-1 rounded-button border-0 sm:flex-initial">
+              继续认证
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 rounded-button border-0 sm:flex-initial"
+              style={{ background: GAME.error, color: GAME.onPrimary }}
+              onClick={() => {
+                setShowExitConfirm(false);
+                handleClose();
+              }}
+            >
+              确认退出
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

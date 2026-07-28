@@ -56,6 +56,14 @@ function formatDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+/** 在现有到期日基础上续费 1 年；若到期日已过期，则从今天起算，避免续费后仍显示过去的日期 */
+export function extendExpireByOneYear(expireAt: string): string {
+  const current = new Date(expireAt);
+  const base = Number.isNaN(current.getTime()) || current < new Date() ? new Date() : current;
+  base.setFullYear(base.getFullYear() + 1);
+  return formatDate(base);
+}
+
 /** 生成演示用实名认证信息（姓名脱敏、到期时间为认证日起 3 年；expired 为 true 时生成一个已过去的到期日，用于演示"认证过期"态） */
 export function createDemoRealNameInfo(
   seed?: string,
