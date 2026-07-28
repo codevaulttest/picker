@@ -260,7 +260,12 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
       }
     } else if (step === "region") {
       if (documentType === null) setDocumentType(docTypes[0]);
-      setStep("doc");
+      // 境外/无本地证件的国家在 demo 里没有真正的第三方认证可接，跳过时直接视为认证完成，不进证件上传/人脸步骤
+      if (isDemoLimited) {
+        finishVerification();
+      } else {
+        setStep("doc");
+      }
     } else if (step === "doc") {
       setStep("face");
       startCamera();
