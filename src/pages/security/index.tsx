@@ -26,7 +26,7 @@ import EmailBindDialog from "@/components/dialogs/EmailBindDialog";
 import PhoneBindDialog from "@/components/dialogs/PhoneBindDialog";
 import RealNameDialog, { type RealNameInfo } from "@/components/dialogs/RealNameDialog";
 import RealNameInfoDialog from "@/components/dialogs/RealNameInfoDialog";
-import { createDemoRealNameInfo, extendExpireByOneYear, isVerified, VERIFY_STATUS_META } from "@/lib/realName";
+import { createDemoRealNameInfo, extendExpireByOneYear, isExpiringSoon, isVerified, VERIFY_STATUS_META } from "@/lib/realName";
 import VerifyIdentityDialog from "@/components/dialogs/VerifyIdentityDialog";
 import FaceLoginConsentDialog from "@/components/dialogs/FaceLoginConsentDialog";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
@@ -317,8 +317,9 @@ export default function SecurityPage() {
                 }
 
                 const verifyMeta = user ? VERIFY_STATUS_META[user.verifyStatus] : undefined;
+                const verifyExpiringSoon = user?.verifyStatus === 1 && isExpiringSoon(user.verifyExpireAt);
                 const status = isRealname
-                  ? verifyMeta?.label ?? "去认证"
+                  ? verifyExpiringSoon ? "即将到期" : verifyMeta?.label ?? "去认证"
                   : isEmail
                     ? user?.email
                       ? maskEmail(user.email)
@@ -329,7 +330,7 @@ export default function SecurityPage() {
                         : "未绑定"
                       : item.status;
                 const tone: SecurityStatusTone | undefined = isRealname
-                  ? verifyMeta?.tone ?? "action"
+                  ? verifyExpiringSoon ? "warning" : verifyMeta?.tone ?? "action"
                   : isEmail
                     ? "muted"
                     : isPhone
