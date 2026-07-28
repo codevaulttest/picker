@@ -259,7 +259,7 @@ export default function HomePage() {
         onClose={() => setShowSignIn(false)}
         onGoRealName={() => { setShowSignIn(false); setShowRealName(true); }}
       />
-      <RealNameDialog open={showRealName} onComplete={() => { setShowRealName(false); if (user) setUser({ ...user, verifyStatus: 1 } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
+      <RealNameDialog open={showRealName} onComplete={(info) => { setShowRealName(false); if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
       <CheckInRulesDialog open={showCheckInRules} onClose={() => setShowCheckInRules(false)} />
 
       {/* 下拉双语义：小幅/快速下拉→内容刷新指示；继续下拉过阈值→贴顶展开至视口 80% 的小程序面板 */}

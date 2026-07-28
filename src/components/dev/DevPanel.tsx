@@ -5,15 +5,36 @@ import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { THEME, BRAND } from "@/config/app.config";
 import { registerUser } from "@/lib/mockBackend";
-import { VERIFY_STATUS_META, type VerifyStatus } from "@/lib/realName";
+import { demoDateDaysFromNow, isExpiringSoon } from "@/lib/realName";
+import type { UserProfile } from "@/types";
 
-const VERIFY_STATUS_OPTIONS: { value: VerifyStatus; short: string }[] = [
-  { value: -1, short: "未完成" },
-  { value: 0, short: "待审核" },
-  { value: 1, short: "通过" },
-  { value: 2, short: "拒绝" },
-  { value: 4, short: "资料不全" },
-  { value: 6, short: "已过期" },
+const EXPIRING_SOON_DEMO_DAYS = 20;
+const VERIFIED_DEMO_DAYS = 365 * 3;
+
+/** 「即将到期」不是独立的后端状态，而是 verifyStatus=1 叠加临近的 verifyExpireAt，因此单独建模，不能简单按 verifyStatus 一一对应 */
+const VERIFY_STATUS_ITEMS: {
+  key: string;
+  short: string;
+  active: (u: UserProfile | null) => boolean;
+  apply: () => Pick<UserProfile, "verifyStatus" | "verifyExpireAt">;
+}[] = [
+  { key: "-1", short: "未完成", active: (u) => u?.verifyStatus === -1, apply: () => ({ verifyStatus: -1, verifyExpireAt: null }) },
+  { key: "0", short: "待审核", active: (u) => u?.verifyStatus === 0, apply: () => ({ verifyStatus: 0, verifyExpireAt: null }) },
+  {
+    key: "1",
+    short: "通过",
+    active: (u) => u?.verifyStatus === 1 && !isExpiringSoon(u.verifyExpireAt),
+    apply: () => ({ verifyStatus: 1, verifyExpireAt: demoDateDaysFromNow(VERIFIED_DEMO_DAYS) }),
+  },
+  { key: "2", short: "拒绝", active: (u) => u?.verifyStatus === 2, apply: () => ({ verifyStatus: 2, verifyExpireAt: null }) },
+  { key: "4", short: "资料不全", active: (u) => u?.verifyStatus === 4, apply: () => ({ verifyStatus: 4, verifyExpireAt: null }) },
+  {
+    key: "soon",
+    short: "即将到期",
+    active: (u) => u?.verifyStatus === 1 && isExpiringSoon(u.verifyExpireAt),
+    apply: () => ({ verifyStatus: 1, verifyExpireAt: demoDateDaysFromNow(EXPIRING_SOON_DEMO_DAYS) }),
+  },
+  { key: "6", short: "已过期", active: (u) => u?.verifyStatus === 6, apply: () => ({ verifyStatus: 6, verifyExpireAt: null }) },
 ];
 
 /** 开发者调试面板 — 右下角贴边绿色半胶囊，仅本次会话隐藏（刷新后重新展示） */
@@ -30,9 +51,10 @@ export default function DevPanel() {
 
   if (hidden) return null;
 
-  const handleVerifyStatusChange = (status: VerifyStatus) => {
-    if (user) setUser({ ...user, verifyStatus: status });
-    toast({ title: `已切换为「${VERIFY_STATUS_META[status].label}」` });
+  const handleVerifyStatusItem = (item: (typeof VERIFY_STATUS_ITEMS)[number]) => {
+    if (!user) return;
+    setUser({ ...user, ...item.apply() });
+    toast({ title: `已切换为「${item.short}」` });
   };
 
   const handleResetTodayCheckIn = () => {
@@ -112,19 +134,19 @@ export default function DevPanel() {
           <div className="mb-3">
             <span className="text-body text-game-ink-secondary block mb-1.5">实名认证状态</span>
             <div className="flex flex-wrap gap-1">
-              {VERIFY_STATUS_OPTIONS.map((opt) => (
+              {VERIFY_STATUS_ITEMS.map((item) => (
                 <button
-                  key={opt.value}
+                  key={item.key}
                   type="button"
                   disabled={!user}
-                  onClick={() => handleVerifyStatusChange(opt.value)}
+                  onClick={() => handleVerifyStatusItem(item)}
                   className={`h-6 px-1.5 rounded-button text-[10px] font-bold disabled:opacity-40 ${
-                    user?.verifyStatus === opt.value
+                    item.active(user)
                       ? "bg-game-primary text-white"
                       : "bg-game-bg-muted text-game-ink-secondary"
                   }`}
                 >
-                  {opt.short}
+                  {item.short}
                 </button>
               ))}
             </div>

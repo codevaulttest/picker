@@ -13,6 +13,8 @@ export interface UserProfile {
   pkeId: string;
   realName: string;
   verifyStatus: VerifyStatus;
+  /** 实名认证到期日期（YYYY-MM-DD），仅在 verifyStatus 通过/过期时有意义，用于提醒即将到期 */
+  verifyExpireAt: string | null;
   level: number;
   phone: string | null;
   email: string | null;

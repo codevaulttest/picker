@@ -234,11 +234,14 @@ export default function SecurityPage() {
     });
   };
 
-  // 已认证/已过期但尚未在本次流程中采集过认证信息（如历史数据）时，用演示数据兜底展示
+  // 已认证/已过期但尚未在本次流程中采集过认证信息（如历史数据）时，用演示数据兜底展示；到期日优先用用户身上已持久化的 verifyExpireAt，保持和"我的"页的提醒一致
   const displayedRealNameInfo =
     realNameInfo ??
     (user && (isVerified(user.verifyStatus) || user.verifyStatus === 6)
-      ? createDemoRealNameInfo(user.pkeId, undefined, undefined, user.verifyStatus === 6)
+      ? {
+          ...createDemoRealNameInfo(user.pkeId, undefined, undefined, user.verifyStatus === 6),
+          ...(user.verifyExpireAt ? { expireAt: user.verifyExpireAt } : {}),
+        }
       : null);
 
   return (
@@ -545,14 +548,16 @@ export default function SecurityPage() {
         onComplete={(info) => {
           setShowRealName(false);
           setRealNameInfo(info);
-          if (user) setUser({ ...user, verifyStatus: 1 } as any);
+          if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt } as any);
           toast({ title: "实名认证成功" });
         }}
         onRenewComplete={() => {
           setShowRealName(false);
           setRenewMode(false);
           if (!displayedRealNameInfo) return;
-          setRealNameInfo({ ...displayedRealNameInfo, expireAt: extendExpireByOneYear(displayedRealNameInfo.expireAt) });
+          const renewedExpireAt = extendExpireByOneYear(displayedRealNameInfo.expireAt);
+          setRealNameInfo({ ...displayedRealNameInfo, expireAt: renewedExpireAt });
+          if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: renewedExpireAt } as any);
           toast({ title: "已续费，有效期延长 1 年" });
         }}
       />

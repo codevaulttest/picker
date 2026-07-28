@@ -174,6 +174,7 @@ export async function registerUser(name: string) {
     pkeId,
     realName: "",
     verifyStatus: -1,
+    verifyExpireAt: null,
     level: 1,
     phone: null,
     email: null,

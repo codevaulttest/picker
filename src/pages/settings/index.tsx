@@ -13,7 +13,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import PullToRefresh from "@/components/layout/PullToRefresh";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
 import SwitchAccountSheet from "@/components/dialogs/SwitchAccountSheet";
-import { isVerified } from "@/lib/realName";
+import { isExpiringSoon, isVerified } from "@/lib/realName";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -142,6 +142,21 @@ export default function SettingsPage() {
           </div>
         </section>
       )}
+      {user && user.verifyStatus === 1 && isExpiringSoon(user.verifyExpireAt) && (
+        <section className="mx-3.5 mt-1 flex-shrink-0">
+          <button
+            onClick={() => navigate("/security")}
+            className="w-full flex items-center gap-2.5 px-4 py-3 rounded-card transition-colors active:brightness-95"
+            style={{ background: isDark ? GAME.warningSoftDark : GAME.warningSoft }}
+          >
+            <IdCard size={18} className="flex-shrink-0" style={{ color: GAME.warning }} />
+            <span className={`flex-1 text-left text-grid-label ${ink}`}>
+              认证将于 {user.verifyExpireAt} 到期，请及时续费
+            </span>
+            <ChevronRight size={16} style={{ color: GAME.warning }} />
+          </button>
+        </section>
+      )}
 
       {/* Menu list — single card, hairline dividers */}
       <section className="mx-3.5 mt-2.5 mb-4 pb-2 flex-shrink-0">
@@ -209,9 +224,9 @@ export default function SettingsPage() {
       <RealNameDialog
         open={showRealName}
         onClose={() => setShowRealName(false)}
-        onComplete={() => {
+        onComplete={(info) => {
           setShowRealName(false);
-          if (user) setUser({ ...user, verifyStatus: 1 } as any);
+          if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt } as any);
           toast({ title: "实名认证成功" });
         }}
       />

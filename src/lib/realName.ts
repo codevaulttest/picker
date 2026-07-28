@@ -64,6 +64,25 @@ export function extendExpireByOneYear(expireAt: string): string {
   return formatDate(base);
 }
 
+/** "认证即将到期"提示的阈值天数 */
+export const EXPIRE_SOON_DAYS = 30;
+
+/** 已认证但到期日临近（尚未过期）时判定为"即将到期"，用于提醒用户及时续费 */
+export function isExpiringSoon(expireAt: string | null | undefined, days = EXPIRE_SOON_DAYS): boolean {
+  if (!expireAt) return false;
+  const expire = new Date(expireAt);
+  if (Number.isNaN(expire.getTime())) return false;
+  const diffDays = (expire.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  return diffDays >= 0 && diffDays <= days;
+}
+
+/** 演示用：生成距今 N 天后的日期字符串，供开发者面板演示"即将到期"等场景 */
+export function demoDateDaysFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return formatDate(d);
+}
+
 /** 生成演示用实名认证信息（姓名脱敏、到期时间为认证日起 3 年；expired 为 true 时生成一个已过去的到期日，用于演示"认证过期"态） */
 export function createDemoRealNameInfo(
   seed?: string,
