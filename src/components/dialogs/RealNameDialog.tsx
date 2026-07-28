@@ -320,14 +320,16 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
           aria-hidden
         />
         <div className="relative z-10 flex items-center h-11">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="relative z-10 flex size-11 items-center justify-center -ml-2 rounded-button"
-            aria-label="返回"
-          >
-            <ChevronLeft size={22} strokeWidth={2} className={ink} />
-          </button>
+          {step !== "done" && (
+            <button
+              type="button"
+              onClick={handleBack}
+              className="relative z-10 flex size-11 items-center justify-center -ml-2 rounded-button"
+              aria-label="返回"
+            >
+              <ChevronLeft size={22} strokeWidth={2} className={ink} />
+            </button>
+          )}
           <h1 className={`pointer-events-none absolute inset-x-0 text-center text-section-title ${ink}`}>
             {step === "code" && (renewMode ? "续费实名认证" : "支付或填写认证码")}
             {step === "region" && "选择国家/地区"}
