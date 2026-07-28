@@ -2,6 +2,16 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Wallet, KeyRound, Globe, IdCard, Car, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
@@ -58,6 +68,8 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   const [streamActive, setStreamActive] = useState(false);
   /** 选了中国以外的国家/地区时：先让用户选证件类型，再提示走第三方认证（demo 到此为止，不真正切换国家） */
   const [showForeignDocPicker, setShowForeignDocPicker] = useState(false);
+  /** 支付/认证码页返回时的二次确认——退出后需要重新开始 */
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
@@ -104,6 +116,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     }
     setStreamActive(false);
     setShowForeignDocPicker(false);
+    setShowExitConfirm(false);
   }, [skipUnlockPay, renewMode]);
 
   const handleClose = () => {
@@ -118,7 +131,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     setStreamActive(false);
   };
 
-  /** 返回按钮：逐级退回上一屏（人脸→证件→选国家→支付/认证码），只有从最开始的支付/认证码屏再退才是真正退出——反正中途退出不会扣费或消耗认证码 */
+  /** 返回按钮：逐级退回上一屏（人脸→证件→选国家→支付/认证码），只有从最开始的支付/认证码屏再退才是真正退出——反正中途退出不会扣费或消耗认证码，但退出后要重新开始，先二次确认避免误触 */
   const handleBack = () => {
     if (step === "doc") {
       setStep("region");
@@ -128,7 +141,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     } else if (step === "region" && !skipUnlockPay) {
       setStep("code");
     } else {
-      handleClose();
+      setShowExitConfirm(true);
     }
   };
 
@@ -645,6 +658,34 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
             </button>
           )}
       </div>
+
+      <AlertDialog open={showExitConfirm} onOpenChange={(v) => !v && setShowExitConfirm(false)}>
+        <AlertDialogContent
+          className={`rounded-card border-0 ${isDark ? "bg-game-bg-card-dark" : "bg-game-bg-card"}`}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className={ink}>退出认证？</AlertDialogTitle>
+            <AlertDialogDescription className={isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}>
+              退出后需要重新开始，已填写的信息不会保留。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row justify-end gap-2">
+            <AlertDialogCancel className="mt-0 flex-1 rounded-button border-0 sm:flex-initial">
+              继续认证
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 rounded-button border-0 sm:flex-initial"
+              style={{ background: GAME.error, color: GAME.onPrimary }}
+              onClick={() => {
+                setShowExitConfirm(false);
+                handleClose();
+              }}
+            >
+              确认退出
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
