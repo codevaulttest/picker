@@ -11,7 +11,7 @@ import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
 import { findCountry, type CountryCode } from "@/lib/phoneCountries";
 import { DOCUMENT_LABELS, type DocumentType } from "@/lib/documentTypes";
-import { VERIFY_STATUS_META, type VerifyStatus } from "@/lib/realName";
+import { isExpiringSoon, VERIFY_STATUS_META, type VerifyStatus } from "@/lib/realName";
 
 interface Props {
   open: boolean;
@@ -55,9 +55,12 @@ export default function RealNameInfoDialog({
   const Flag = country?.Flag;
   const meta = status !== undefined ? VERIFY_STATUS_META[status] : undefined;
   const isDetail = meta?.action === "detail" || meta?.action === "expired";
+  const expiringSoon = status === 1 && isExpiringSoon(expireAt);
 
-  const iconBg = isDark ? GAME.successSoftDark : GAME.successSoft;
-  const iconColor = GAME.success;
+  const iconBg = expiringSoon
+    ? isDark ? GAME.warningSoftDark : GAME.warningSoft
+    : isDark ? GAME.successSoftDark : GAME.successSoft;
+  const iconColor = expiringSoon ? GAME.warning : GAME.success;
   const Icon = IdCard;
   const StatusIcon =
     meta?.action === "pending" ? Hourglass : meta?.action === "rejected" ? XCircle : AlertTriangle;
@@ -68,7 +71,11 @@ export default function RealNameInfoDialog({
   const statusIconColor = meta?.action === "rejected" ? GAME.error : GAME.warning;
 
   const rows = [
-    { label: "认证状态", value: meta?.label ?? "已认证", tone: meta?.tone === "warning" ? GAME.warning : GAME.success },
+    {
+      label: "认证状态",
+      value: expiringSoon ? "即将到期" : meta?.label ?? "已认证",
+      tone: expiringSoon || meta?.tone === "warning" ? GAME.warning : GAME.success,
+    },
     { label: "真实姓名", value: maskedName || "—" },
     { label: "证件类型", value: documentType ? DOCUMENT_LABELS[documentType] : "—" },
     {
