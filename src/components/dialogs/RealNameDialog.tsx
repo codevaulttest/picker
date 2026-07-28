@@ -1,16 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Wallet, KeyRound, Globe } from "lucide-react";
+import { ChevronLeft, ChevronRight, Wallet, KeyRound, Globe, IdCard, Car, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
@@ -27,7 +18,7 @@ export type { RealNameInfo };
 
 interface Props {
   open: boolean;
-  /** 重新提交（认证被拒绝/资料不完整）时无需再付一次解锁费用，直接跳过支付/认证码步骤 */
+  /** 重新提交（认证被拒绝/资料不完整）时无需再付一次开通费用，直接跳过支付/认证码步骤 */
   skipUnlockPay?: boolean;
   /** renew：仅展示"支付/认证码"这一屏，付款或验证通过后直接完成续费，不进入国家/证件/人脸后续步骤 */
   mode?: "verify" | "renew";
@@ -51,18 +42,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   const assets = useStore((s) => s.assets);
   const updateAsset = useStore((s) => s.updateAsset);
   const pkeId = useStore((s) => s.user?.pkeId);
-
-  /** 是否已经解锁过认证（付过款/填对过认证码）——按账号持久化，退出后再次进入无需重复支付 */
-  const unlockedKey = pkeId ? `pke_realname_unlocked_${pkeId}` : null;
-  const readUnlocked = () => !!unlockedKey && localStorage.getItem(unlockedKey) === "1";
-  const markUnlocked = () => {
-    if (unlockedKey) localStorage.setItem(unlockedKey, "1");
-  };
-  const clearUnlocked = () => {
-    if (unlockedKey) localStorage.removeItem(unlockedKey);
-  };
-  const effectiveSkipUnlockPay = skipUnlockPay || readUnlocked();
-  const getInitialStep = (): Step => (renewMode ? "code" : effectiveSkipUnlockPay ? "region" : "code");
+  const getInitialStep = (): Step => (renewMode ? "code" : skipUnlockPay ? "region" : "code");
 
   const [step, setStep] = useState<Step>(getInitialStep());
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
@@ -76,7 +56,8 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   const [frontImg, setFrontImg] = useState<string | null>(null);
   const [backImg, setBackImg] = useState<string | null>(null);
   const [streamActive, setStreamActive] = useState(false);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  /** 选了中国以外的国家/地区时：先让用户选证件类型，再提示走第三方认证（demo 到此为止，不真正切换国家） */
+  const [showForeignDocPicker, setShowForeignDocPicker] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +72,12 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     setDocumentType(allowedDocumentTypes(code)[0]);
     setFrontImg(null);
     setBackImg(null);
+  };
+
+  /** 非中国地区仅走到"选证件类型"就到头——demo 不接第三方认证，选完直接提示并留在国家选择页 */
+  const handlePickForeignDocType = () => {
+    setShowForeignDocPicker(false);
+    toast({ title: "（demo）进入第三方认证流程" });
   };
 
   const handleSelectDocType = (type: DocumentType) => {
@@ -116,8 +103,8 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
       videoRef.current.srcObject = null;
     }
     setStreamActive(false);
-    // 注意：不清除"已解锁"标记，退出后重新进入无需再次支付
-  }, [skipUnlockPay, unlockedKey, renewMode]);
+    setShowForeignDocPicker(false);
+  }, [skipUnlockPay, renewMode]);
 
   const handleClose = () => {
     reset();
@@ -131,15 +118,15 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     setStreamActive(false);
   };
 
-  /** 返回按钮：已解锁认证后逐级退回上一屏，只有从第一屏（选择国家/地区）再退才是真正退出 */
+  /** 返回按钮：逐级退回上一屏（人脸→证件→选国家→支付/认证码），只有从最开始的支付/认证码屏再退才是真正退出——反正中途退出不会扣费或消耗认证码 */
   const handleBack = () => {
     if (step === "doc") {
       setStep("region");
     } else if (step === "face") {
       stopCamera();
       setStep("doc");
-    } else if (step === "region" && effectiveSkipUnlockPay) {
-      setShowExitConfirm(true);
+    } else if (step === "region" && !skipUnlockPay) {
+      setStep("code");
     } else {
       handleClose();
     }
@@ -170,8 +157,15 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     }
   };
 
+  /** 只有真正完成认证/续费才扣款，中途退出不收费 */
+  const chargeIfPaying = () => {
+    if (unlockMethod === "pay") {
+      updateAsset("cv", (assets?.cv ?? 0) - REAL_NAME_PAY_COST);
+    }
+  };
+
   const finishVerification = () => {
-    clearUnlocked();
+    chargeIfPaying();
     setStep("done");
     setTimeout(() => {
       onComplete(createDemoRealNameInfo(pkeId, country, documentType));
@@ -180,6 +174,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   };
 
   const finishRenew = () => {
+    chargeIfPaying();
     setStep("done");
     setTimeout(() => {
       onRenewComplete?.();
@@ -193,7 +188,6 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
         if (renewMode) {
           finishRenew();
         } else {
-          markUnlocked();
           setStep("region");
         }
       } else {
@@ -232,7 +226,6 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
       if (renewMode) {
         finishRenew();
       } else {
-        markUnlocked();
         setStep("region");
       }
     } else if (step === "region") {
@@ -257,12 +250,10 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     }
     setPaying(true);
     setTimeout(() => {
-      updateAsset("cv", balance - REAL_NAME_PAY_COST);
       setPaying(false);
       if (renewMode) {
         finishRenew();
       } else {
-        markUnlocked();
         setStep("region");
       }
     }, 600);
@@ -276,7 +267,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     setHideBottomNav(true);
     return () => setHideBottomNav(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, skipUnlockPay, unlockedKey, renewMode, setHideBottomNav]);
+  }, [open, skipUnlockPay, renewMode, setHideBottomNav]);
 
   if (!open) return null;
 
@@ -324,12 +315,20 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4">
-          {/* 步骤1：支付 500 CV 或 输入认证码，解锁后续认证流程 */}
+          {/* 步骤1：支付 500 CV 或 输入认证码，开通后续认证流程 */}
           {step === "code" && (
             <>
-              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{renewMode ? "选择一种方式，续费实名认证" : "选择一种方式，解锁实名认证"}</p>
+              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{renewMode ? "选择一种方式，开始续费实名认证" : "选择一种方式，开始实名认证"}</p>
+              <div
+                className={`flex items-start gap-2 rounded-xl px-3 py-2.5 ${isDark ? "bg-game-info-soft-dark" : "bg-game-info-soft"}`}
+              >
+                <Info size={14} strokeWidth={2.5} className="mt-0.5 shrink-0 text-game-info" aria-hidden />
+                <p className={`text-[12px] leading-relaxed ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
+                  {renewMode ? "续费成功后才会扣款或核销认证码，中途退出不受影响" : "认证通过后才会扣款或核销认证码，中途退出不受影响"}
+                </p>
+              </div>
 
-              {/* 解锁方式：支付 / 认证码 —— 两张可展开的选择卡 */}
+              {/* 开通方式：支付 / 认证码 —— 两张可展开的选择卡 */}
               <div
                 className={`rounded-xl border overflow-hidden transition-colors ${
                   unlockMethod === "pay"
@@ -471,9 +470,49 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
                 showDial={false}
                 onSelect={handleSelectCountry}
                 isSelectable={(code) => code === DEFAULT_COUNTRY}
-                onIneligible={() => toast({ title: "（demo）进入第三方认证流程" })}
+                onIneligible={() => setShowForeignDocPicker(true)}
                 onClose={() => setShowCountryPicker(false)}
               />
+
+              <Dialog open={showForeignDocPicker} onOpenChange={(v) => !v && setShowForeignDocPicker(false)}>
+                <DialogContent className={isDark ? "bg-game-bg-card-dark" : undefined} showCloseButton>
+                  <DialogHeader>
+                    <DialogTitle className={ink}>选择证件类型</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2.5">
+                    <button
+                      type="button"
+                      onClick={handlePickForeignDocType}
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
+                        isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
+                      }`}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
+                        style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
+                      >
+                        <IdCard size={20} style={{ color: GAME.primary }} />
+                      </div>
+                      <p className={`text-sm font-medium ${ink}`}>{DOCUMENT_LABELS.passport}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePickForeignDocType}
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
+                        isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
+                      }`}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
+                        style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
+                      >
+                        <Car size={20} style={{ color: GAME.primary }} />
+                      </div>
+                      <p className={`text-sm font-medium ${ink}`}>{DOCUMENT_LABELS.license}</p>
+                    </button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </>
           )}
 
@@ -587,7 +626,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
               onClick={step === "code" && unlockMethod === "pay" ? handlePay : handleNext}
               disabled={step === "code" && unlockMethod === "pay" && paying}>
               {step === "code" && unlockMethod === "pay"
-                ? (paying ? "支付中…" : `支付 ${REAL_NAME_PAY_COST} CV ${renewMode ? "续费" : "解锁认证"}`)
+                ? (paying ? "支付中…" : `支付 ${REAL_NAME_PAY_COST} CV ${renewMode ? "续费" : "开通认证"}`)
                 : renewMode
                   ? "确认续费"
                   : step === "face"
@@ -606,34 +645,6 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
             </button>
           )}
       </div>
-
-      <AlertDialog open={showExitConfirm} onOpenChange={(v) => !v && setShowExitConfirm(false)}>
-        <AlertDialogContent
-          className={`rounded-card border-0 ${isDark ? "bg-game-bg-card-dark" : "bg-game-bg-card"}`}
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle className={ink}>退出认证？</AlertDialogTitle>
-            <AlertDialogDescription className={isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}>
-              已支付的解锁费用不会浪费，下次点击"去认证"可以直接继续填写资料，无需重新支付或验证。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row justify-end gap-2">
-            <AlertDialogCancel className="mt-0 flex-1 rounded-button border-0 sm:flex-initial">
-              继续认证
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="flex-1 rounded-button border-0 sm:flex-initial"
-              style={{ background: GAME.error, color: GAME.onPrimary }}
-              onClick={() => {
-                setShowExitConfirm(false);
-                handleClose();
-              }}
-            >
-              确认退出
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
