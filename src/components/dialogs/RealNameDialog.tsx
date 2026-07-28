@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Wallet, KeyRound, Globe, IdCard, Car, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +56,8 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   const [step, setStep] = useState<Step>(getInitialStep());
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [documentType, setDocumentType] = useState<DocumentType>(allowedDocumentTypes(DEFAULT_COUNTRY)[0]);
+  /** 有多种证件类型可选时，不预选任何一项，强制用户主动选择 */
+  const [documentType, setDocumentType] = useState<DocumentType | null>(allowedDocumentTypes(DEFAULT_COUNTRY)[0]);
   const [unlockMethod, setUnlockMethod] = useState<UnlockMethod>("code");
   const [codeType, setCodeType] = useState<CodeType>("pke");
   const [authCode, setAuthCode] = useState("");
@@ -66,10 +66,16 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   const [frontImg, setFrontImg] = useState<string | null>(null);
   const [backImg, setBackImg] = useState<string | null>(null);
   const [streamActive, setStreamActive] = useState(false);
-  /** 选了中国以外的国家/地区时：先让用户选证件类型，再提示走第三方认证（demo 到此为止，不真正切换国家） */
-  const [showForeignDocPicker, setShowForeignDocPicker] = useState(false);
   /** 支付/认证码页返回时的二次确认——退出后需要重新开始 */
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  /** 未选证件类型就点下一步时，在证件类型控件旁就地提示，而不是弹全局 toast */
+  const [docTypeError, setDocTypeError] = useState(false);
+  /** 认证码格式错误——就地显示在输入框下方 */
+  const [authCodeError, setAuthCodeError] = useState(false);
+  /** 证件正/反面缺失——就地高亮对应的上传框 */
+  const [docImgError, setDocImgError] = useState<{ front: boolean; back: boolean }>({ front: false, back: false });
+  /** CV 余额不足——就地显示在"支付"选择卡内 */
+  const [payBalanceError, setPayBalanceError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
@@ -77,23 +83,25 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   const actions = ["请眨眼", "请摇头", "请张嘴"];
   const countryOption = findCountry(country);
   const docTypes = allowedDocumentTypes(country);
-  const needsBack = documentType !== "passport";
+  /** 证件上传/人脸等后续步骤只会在证件类型确定后才会进入，这里兜底取第一个仅用于类型收窄 */
+  const effectiveDocType = documentType ?? docTypes[0];
+  const needsBack = effectiveDocType !== "passport";
+  /** 仅本地身份证件（大陆/港澳台）在 demo 内走完整流程；其余国家/地区的证件类型仅供预览，下一步时提示走第三方认证 */
+  const isDemoLimited = !docTypes.includes("idcard");
 
   const handleSelectCountry = (code: CountryCode) => {
     setCountry(code);
-    setDocumentType(allowedDocumentTypes(code)[0]);
+    const types = allowedDocumentTypes(code);
+    // 只有一种证件类型时无需选择，直接确定；多种可选时清空，强制用户重新选择
+    setDocumentType(types.length === 1 ? types[0] : null);
+    setDocTypeError(false);
     setFrontImg(null);
     setBackImg(null);
   };
 
-  /** 非中国地区仅走到"选证件类型"就到头——demo 不接第三方认证，选完直接提示并留在国家选择页 */
-  const handlePickForeignDocType = () => {
-    setShowForeignDocPicker(false);
-    toast({ title: "（demo）进入第三方认证流程" });
-  };
-
   const handleSelectDocType = (type: DocumentType) => {
     setDocumentType(type);
+    setDocTypeError(false);
     setFrontImg(null);
     setBackImg(null);
   };
@@ -115,8 +123,11 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
       videoRef.current.srcObject = null;
     }
     setStreamActive(false);
-    setShowForeignDocPicker(false);
     setShowExitConfirm(false);
+    setDocTypeError(false);
+    setAuthCodeError(false);
+    setDocImgError({ front: false, back: false });
+    setPayBalanceError(false);
   }, [skipUnlockPay, renewMode]);
 
   const handleClose = () => {
@@ -152,6 +163,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     reader.onload = (ev) => {
       if (type === "front") setFrontImg(ev.target?.result as string);
       else setBackImg(ev.target?.result as string);
+      setDocImgError((prev) => ({ ...prev, [type]: false }));
       toast({ title: "上传成功" });
     };
     reader.readAsDataURL(file);
@@ -181,7 +193,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
     chargeIfPaying();
     setStep("done");
     setTimeout(() => {
-      onComplete(createDemoRealNameInfo(pkeId, country, documentType));
+      onComplete(createDemoRealNameInfo(pkeId, country, effectiveDocType));
       reset();
     }, 1500);
   };
@@ -198,23 +210,28 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   const handleNext = () => {
     if (step === "code" && unlockMethod === "code" && authCode.trim()) {
       if (authCode.length === 12) {
+        setAuthCodeError(false);
         if (renewMode) {
           finishRenew();
         } else {
           setStep("region");
         }
       } else {
-        toast({ title: "认证码格式错误", description: "请输入12位字母+数字认证码", variant: "destructive" });
+        setAuthCodeError(true);
       }
     } else if (step === "region") {
-      setStep("doc");
-    } else if (step === "doc") {
-      if (!frontImg) {
-        toast({ title: `请上传${DOCUMENT_LABELS[documentType]}${needsBack ? "正面" : ""}`, variant: "warning" });
+      if (docTypes.length > 1 && documentType === null) {
+        setDocTypeError(true);
         return;
       }
-      if (needsBack && !backImg) {
-        toast({ title: `请上传${DOCUMENT_LABELS[documentType]}反面`, variant: "warning" });
+      if (isDemoLimited) {
+        toast({ title: "（demo）进入第三方认证流程" });
+        return;
+      }
+      setStep("doc");
+    } else if (step === "doc") {
+      if (!frontImg || (needsBack && !backImg)) {
+        setDocImgError({ front: !frontImg, back: needsBack && !backImg });
         return;
       }
       setStep("face");
@@ -242,6 +259,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
         setStep("region");
       }
     } else if (step === "region") {
+      if (documentType === null) setDocumentType(docTypes[0]);
       setStep("doc");
     } else if (step === "doc") {
       setStep("face");
@@ -258,9 +276,10 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
   const handlePay = () => {
     const balance = assets?.cv ?? 0;
     if (balance < REAL_NAME_PAY_COST) {
-      toast({ title: "CV 余额不足", description: `完成实名认证需支付 ${REAL_NAME_PAY_COST} CV`, variant: "destructive" });
+      setPayBalanceError(true);
       return;
     }
+    setPayBalanceError(false);
     setPaying(true);
     setTimeout(() => {
       setPaying(false);
@@ -344,15 +363,17 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
               {/* 开通方式：支付 / 认证码 —— 两张可展开的选择卡 */}
               <div
                 className={`rounded-xl border overflow-hidden transition-colors ${
-                  unlockMethod === "pay"
-                    ? isDark ? "border-game-primary" : "border-game-primary"
-                    : isDark ? "border-game-border-light-dark" : "border-game-border-light"
+                  payBalanceError
+                    ? "border-game-error"
+                    : unlockMethod === "pay"
+                      ? isDark ? "border-game-primary" : "border-game-primary"
+                      : isDark ? "border-game-border-light-dark" : "border-game-border-light"
                 }`}
                 style={unlockMethod === "pay" ? { background: isDark ? GAME.primarySoftDark : GAME.primarySoft } : { background: isDark ? "transparent" : "#fff" }}
               >
                 <button
                   type="button"
-                  onClick={() => setUnlockMethod("pay")}
+                  onClick={() => { setUnlockMethod("pay"); setPayBalanceError(false); }}
                   className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
                 >
                   <div
@@ -380,8 +401,11 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
                     </div>
                     <div className="flex items-center justify-between">
                       <span className={`text-[12px] ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>当前余额</span>
-                      <span className={`text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{(assets?.cv ?? 0).toLocaleString()} CV</span>
+                      <span className={`text-sm font-medium ${payBalanceError ? "text-game-error" : isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{(assets?.cv ?? 0).toLocaleString()} CV</span>
                     </div>
+                    {payBalanceError && (
+                      <p className="text-[12px] text-game-error">CV 余额不足，完成实名认证需支付 {REAL_NAME_PAY_COST} CV</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -396,7 +420,7 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
               >
                 <button
                   type="button"
-                  onClick={() => setUnlockMethod("code")}
+                  onClick={() => { setUnlockMethod("code"); setPayBalanceError(false); }}
                   className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
                 >
                   <div
@@ -443,152 +467,156 @@ export default function RealNameDialog({ open, skipUnlockPay = false, mode = "ve
                     </div>
 
                     <input type="text" placeholder="XXXXXXXXXXXX" value={authCode}
-                      onChange={(e) => setAuthCode(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase())}
+                      onChange={(e) => { setAuthCode(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()); setAuthCodeError(false); }}
                       maxLength={12}
                       className={`w-full h-12 px-4 rounded-xl border text-sm font-mono tracking-[0.3em] text-center focus:outline-none focus:ring-2 focus:ring-game-primary-light ${
-                        isDark ? "bg-game-bg-muted-dark border-game-border-light-dark text-game-ink-dark" : "bg-white border-game-border-light text-game-ink"
-                      }`} />
-                    <p className={`text-caption text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>12位字母+数字组合</p>
+                        isDark ? "bg-game-bg-muted-dark text-game-ink-dark" : "bg-white text-game-ink"
+                      } ${authCodeError ? "border-game-error" : isDark ? "border-game-border-light-dark" : "border-game-border-light"}`} />
+                    <p className={`text-caption text-center ${authCodeError ? "text-game-error" : isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
+                      {authCodeError ? "认证码格式错误，请输入12位字母+数字组合" : "12位字母+数字组合"}
+                    </p>
                   </div>
                 )}
               </div>
             </>
           )}
 
-          {/* 步骤2：选择国家/地区 */}
+          {/* 步骤2：选择国家/地区 + 证件类型——两个独立的选择项，各自有标题，互不弹窗打断 */}
           {step === "region" && (
             <>
-              <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>请选择您证件所属的国家/地区</p>
-              <button
-                type="button"
-                onClick={() => setShowCountryPicker(true)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
-                  isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
-                }`}
-              >
-                {countryOption.Flag ? (
-                  <countryOption.Flag className="w-7 h-5 rounded-[2px] flex-shrink-0" />
-                ) : (
-                  <Globe size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{countryOption.name}</p>
-                </div>
-                <ChevronRight size={18} className={isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"} />
-              </button>
+              <div className="space-y-1.5">
+                <p className={`text-caption font-medium ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>选择国家/地区</p>
+                <button
+                  type="button"
+                  onClick={() => setShowCountryPicker(true)}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
+                    isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
+                  }`}
+                >
+                  {countryOption.Flag ? (
+                    <countryOption.Flag className="w-7 h-5 rounded-[2px] flex-shrink-0" />
+                  ) : (
+                    <Globe size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{countryOption.name}</p>
+                  </div>
+                  <ChevronRight size={18} className={isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"} />
+                </button>
+              </div>
 
               <CountryCodeSheet
                 open={showCountryPicker}
                 value={country}
                 showDial={false}
                 onSelect={handleSelectCountry}
-                isSelectable={(code) => code === DEFAULT_COUNTRY}
-                onIneligible={() => setShowForeignDocPicker(true)}
                 onClose={() => setShowCountryPicker(false)}
               />
 
-              <Dialog open={showForeignDocPicker} onOpenChange={(v) => !v && setShowForeignDocPicker(false)}>
-                <DialogContent className={isDark ? "bg-game-bg-card-dark" : undefined} showCloseButton>
-                  <DialogHeader>
-                    <DialogTitle className={ink}>选择证件类型</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-2.5">
-                    <button
-                      type="button"
-                      onClick={handlePickForeignDocType}
-                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
-                        isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
-                      }`}
-                    >
-                      <div
-                        className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
-                        style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
-                      >
-                        <IdCard size={20} style={{ color: GAME.primary }} />
-                      </div>
-                      <p className={`text-sm font-medium ${ink}`}>{DOCUMENT_LABELS.passport}</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handlePickForeignDocType}
-                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
-                        isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
-                      }`}
-                    >
-                      <div
-                        className="w-10 h-10 rounded-button flex items-center justify-center flex-shrink-0"
-                        style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
-                      >
-                        <Car size={20} style={{ color: GAME.primary }} />
-                      </div>
-                      <p className={`text-sm font-medium ${ink}`}>{DOCUMENT_LABELS.license}</p>
-                    </button>
+              <div className="space-y-1.5">
+                <p className={`text-caption font-medium ${docTypeError ? "text-game-error" : isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>选择证件类型</p>
+                {docTypes.length > 1 ? (
+                  <div className="space-y-2">
+                    {docTypes.map((type) => {
+                      const selected = documentType === type;
+                      const TypeIcon = type === "license" ? Car : IdCard;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => handleSelectDocType(type)}
+                          className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-left transition-colors ${
+                            selected ? "border-game-primary" : docTypeError ? "border-game-error" : isDark ? "border-game-border-light-dark" : "border-game-border-light"
+                          }`}
+                          style={selected ? { background: isDark ? GAME.primarySoftDark : GAME.primarySoft } : { background: isDark ? "transparent" : "#fff" }}
+                        >
+                          <TypeIcon size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
+                          <p className={`flex-1 text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{DOCUMENT_LABELS[type]}</p>
+                          <span
+                            className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                            style={selected ? { borderColor: GAME.primary } : { borderColor: docTypeError ? GAME.error : isDark ? "#4A5160" : "#D6DBE3" }}
+                          >
+                            {selected && <span className="w-2.5 h-2.5 rounded-full" style={{ background: GAME.primary }} />}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                </DialogContent>
-              </Dialog>
+                ) : (
+                  <div
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border ${
+                      isDark ? "border-game-border-light-dark bg-game-bg-muted-dark" : "border-game-border-light bg-white"
+                    }`}
+                  >
+                    <IdCard size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
+                    <p className={`flex-1 text-sm font-medium ${isDark ? "text-game-ink-dark" : "text-game-ink"}`}>{DOCUMENT_LABELS[docTypes[0]]}</p>
+                  </div>
+                )}
+                {(docTypeError || docTypes.length === 1) && (
+                  <p className={`text-caption ${docTypeError ? "text-game-error" : isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}`}>
+                    {docTypeError ? "请选择证件类型后再继续" : `${countryOption.name}仅支持${DOCUMENT_LABELS[docTypes[0]]}认证`}
+                  </p>
+                )}
+              </div>
             </>
           )}
 
-          {/* 步骤3：证件上传 - 证件类型随国家/地区变化，可调相册 */}
+          {/* 步骤3：证件上传——证件类型已在上一步选定，这里只负责拍照/相册上传 */}
           {step === "doc" && (
             <>
-              {docTypes.length > 1 && (
-                <div className={`inline-flex items-center gap-1 rounded-button p-1 w-full ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
-                  {docTypes.map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => handleSelectDocType(type)}
-                      className={`flex-1 px-3 py-1.5 rounded-button text-body transition-colors ${
-                        documentType === type
-                          ? isDark ? "bg-game-bg-card-dark text-game-ink-dark shadow-warm-dark" : "bg-game-bg-card text-game-ink shadow-warm"
-                          : isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"
-                      }`}
-                    >
-                      {DOCUMENT_LABELS[type]}
-                    </button>
-                  ))}
-                </div>
-              )}
-
               <p className={`text-sm text-center ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>
-                请上传{DOCUMENT_LABELS[documentType]}{needsBack ? "正反面" : "信息页"}
+                请上传{DOCUMENT_LABELS[effectiveDocType]}{needsBack ? "正反面" : "信息页"}
               </p>
 
               {needsBack ? (
                 <div className="flex gap-3">
+                  <div className="flex-1 space-y-1">
+                    <button onClick={() => frontInputRef.current?.click()}
+                      className={`w-full h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
+                        docImgError.front
+                          ? "border-game-error"
+                          : isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
+                      }`}>
+                      {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
+                        <img src={idCardFrontIcon} alt="" width={24} height={24} />
+                        <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[effectiveDocType]}正面</span>
+                      </>}
+                      <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
+                    </button>
+                    {docImgError.front && <p className="text-caption text-center text-game-error">请上传正面</p>}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <button onClick={() => backInputRef.current?.click()}
+                      className={`w-full h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
+                        docImgError.back
+                          ? "border-game-error"
+                          : isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
+                      }`}>
+                      {backImg ? <img src={backImg} className="w-full h-full object-cover" alt="back" /> : <>
+                        <img src={idCardBackIcon} alt="" width={24} height={24} />
+                        <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[effectiveDocType]}反面</span>
+                      </>}
+                      <input ref={backInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "back")} />
+                    </button>
+                    {docImgError.back && <p className="text-caption text-center text-game-error">请上传反面</p>}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
                   <button onClick={() => frontInputRef.current?.click()}
-                    className={`flex-1 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
-                      isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
+                    className={`w-full h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
+                      docImgError.front
+                        ? "border-game-error"
+                        : isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
                     }`}>
                     {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
                       <img src={idCardFrontIcon} alt="" width={24} height={24} />
-                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}正面</span>
+                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[effectiveDocType]}信息页</span>
                     </>}
                     <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
                   </button>
-                  <button onClick={() => backInputRef.current?.click()}
-                    className={`flex-1 h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
-                      isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
-                    }`}>
-                    {backImg ? <img src={backImg} className="w-full h-full object-cover" alt="back" /> : <>
-                      <img src={idCardBackIcon} alt="" width={24} height={24} />
-                      <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}反面</span>
-                    </>}
-                    <input ref={backInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "back")} />
-                  </button>
+                  {docImgError.front && <p className="text-caption text-center text-game-error">请上传{DOCUMENT_LABELS[effectiveDocType]}信息页</p>}
                 </div>
-              ) : (
-                <button onClick={() => frontInputRef.current?.click()}
-                  className={`w-full h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors overflow-hidden relative ${
-                    isDark ? "border-game-border-light-dark hover:border-game-primary-light" : "border-game-border-light hover:border-game-primary-light"
-                  }`}>
-                  {frontImg ? <img src={frontImg} className="w-full h-full object-cover" alt="front" /> : <>
-                    <img src={idCardFrontIcon} alt="" width={24} height={24} />
-                    <span className={`text-caption ${isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"}`}>{DOCUMENT_LABELS[documentType]}信息页</span>
-                  </>}
-                  <input ref={frontInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "front")} />
-                </button>
               )}
             </>
           )}
