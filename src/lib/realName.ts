@@ -6,8 +6,10 @@ export interface RealNameInfo {
   documentType: DocumentType;
   /** 脱敏后的姓名，如"王**" */
   maskedName: string;
-  /** 认证到期日期，YYYY-MM-DD */
+  /** 平台认证到期日期，YYYY-MM-DD */
   expireAt: string;
+  /** 证件本身有效期，YYYY-MM-DD（与认证到期无关） */
+  documentExpireAt: string;
 }
 
 /** 对齐后端 AuthStatus：-1未完成，0等待审核，1通过，2拒绝，4资料不完整，6认证过期 */
@@ -67,13 +69,33 @@ export function extendExpireByOneYear(expireAt: string): string {
 /** "认证即将到期"提示的阈值天数 */
 export const EXPIRE_SOON_DAYS = 30;
 
-/** 已认证但到期日临近（尚未过期）时判定为"即将到期"，用于提醒用户及时续费 */
+/** "证件即将过期"提示的阈值天数（与认证阈值独立，可按产品另行调整） */
+export const DOCUMENT_EXPIRE_SOON_DAYS = 90;
+
+/** 已认证但认证到期日临近（尚未过期）时判定为"认证即将到期"，用于提醒用户及时续费 */
 export function isExpiringSoon(expireAt: string | null | undefined, days = EXPIRE_SOON_DAYS): boolean {
   if (!expireAt) return false;
   const expire = new Date(expireAt);
   if (Number.isNaN(expire.getTime())) return false;
   const diffDays = (expire.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
   return diffDays >= 0 && diffDays <= days;
+}
+
+/** 证件有效期已过（与平台认证状态无关） */
+export function isDocumentExpired(documentExpireAt: string | null | undefined): boolean {
+  if (!documentExpireAt) return false;
+  const expire = new Date(documentExpireAt);
+  if (Number.isNaN(expire.getTime())) return false;
+  return expire.getTime() < Date.now();
+}
+
+/** 证件有效期临近但尚未过期 */
+export function isDocumentExpiringSoon(
+  documentExpireAt: string | null | undefined,
+  days = DOCUMENT_EXPIRE_SOON_DAYS
+): boolean {
+  if (!documentExpireAt || isDocumentExpired(documentExpireAt)) return false;
+  return isExpiringSoon(documentExpireAt, days);
 }
 
 /** 演示用：生成距今 N 天后的日期字符串，供开发者面板演示"即将到期"等场景 */
@@ -83,7 +105,23 @@ export function demoDateDaysFromNow(days: number): string {
   return formatDate(d);
 }
 
-/** 生成演示用实名认证信息（姓名脱敏、到期时间为认证日起 3 年；expired 为 true 时生成一个已过去的到期日，用于演示"认证过期"态） */
+const VERIFY_REMINDER_SKIP_KEY = "pke_verify_reminder_skip_date";
+
+/** 实名认证未完善弹窗的"今日不再提醒"是否已勾选生效（次日自动失效，重新提醒） */
+export function isVerifyReminderSkippedToday(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(VERIFY_REMINDER_SKIP_KEY) === formatDate(new Date());
+}
+
+/** 记录"今日不再提醒"，仅对当天生效 */
+export function skipVerifyReminderToday(): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(VERIFY_REMINDER_SKIP_KEY, formatDate(new Date()));
+}
+
+const DOCUMENT_VALID_YEARS = 10;
+
+/** 生成演示用实名认证信息（姓名脱敏；认证到期默认 3 年；证件有效期默认 10 年；expired 为 true 时认证到期日落在过去，用于演示"认证过期"态） */
 export function createDemoRealNameInfo(
   seed?: string,
   region: CountryCode = DEFAULT_COUNTRY,
@@ -92,10 +130,13 @@ export function createDemoRealNameInfo(
 ): RealNameInfo {
   const expire = new Date();
   expire.setFullYear(expire.getFullYear() + (expired ? -1 : REAL_NAME_VALID_YEARS));
+  const documentExpire = new Date();
+  documentExpire.setFullYear(documentExpire.getFullYear() + DOCUMENT_VALID_YEARS);
   return {
     region,
     documentType,
     maskedName: maskName(pickDemoName(seed)),
     expireAt: formatDate(expire),
+    documentExpireAt: formatDate(documentExpire),
   };
 }

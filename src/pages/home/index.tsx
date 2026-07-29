@@ -10,7 +10,8 @@ import { GAME, HOME_FEATURES, BRAND, getLevel, MINI_PROGRAMS } from "@/config/ap
 import { useI18n } from "@/hooks/useI18n";
 import SignInDialog from "@/components/dialogs/SignInDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
-import { isVerified } from "@/lib/realName";
+import RealNameReminderDialog from "@/components/dialogs/RealNameReminderDialog";
+import { isVerified, isVerifyReminderSkippedToday } from "@/lib/realName";
 import CheckInRulesDialog from "@/components/dialogs/CheckInRulesDialog";
 import checkInGiftIcon from "@/assets/svg/svg/custom/check-in-gift.svg?url";
 
@@ -42,10 +43,12 @@ export default function HomePage() {
   const { t } = useI18n();
   const [showSignIn, setShowSignIn] = useState(false);
   const [showRealName, setShowRealName] = useState(false);
+  const [showRealNameReminder, setShowRealNameReminder] = useState(false);
   const [showCheckInRules, setShowCheckInRules] = useState(false);
   const [pbIncome, setPbIncome] = useState<{ date: string; amount: number }[]>([]);
   const pkeId = localStorage.getItem("pke_user_id");
   const autoSignInShownRef = useRef(false);
+  const autoRealNameReminderShownRef = useRef(false);
 
   // 仿微信「下拉唤出小程序」：贴顶下拉时面板随手势展开，越过阈值松手即定住展开态
   // 展开高度为视口 80%，底部留 20% 露出首页 header，可点击/上拉收起回到首页
@@ -198,19 +201,36 @@ export default function HomePage() {
   const signInStreak = user?.signInStreak ?? 0;
   const hasSignedToday = !!user?.lastCheckInDate && user.lastCheckInDate === toDateStr(new Date());
 
-  // 自动弹签到弹窗：需已登录+今日未签到+本次打开页面还没弹过+当前没有其他弹窗/面板挡着
-  // 未实名用户也会弹出（展示的是"去实名"引导态），让这批用户也能感知到签到福利
-  // 演示用途：弹过一次的标记只存在内存里（autoSignInShownRef），刷新页面会重新弹，不做跨刷新的持久化频控
+  // 自动弹窗排队：实名认证未完善提醒优先，其次是签到提醒，同一时刻只挂一个定时器，避免两个弹窗同时冒出
+  // 实名提醒：仅未认证/资料不完整时提醒，与「去认证」标签用同一套认证状态判断，只是多一层弹窗提示；勾选"今日不再提醒"后当天不再弹出，次日自动恢复（见 isVerifyReminderSkippedToday）
+  // 签到提醒：需已登录+今日未签到+本次打开页面还没弹过；未实名用户也会弹出（展示的是"去实名"引导态），让这批用户也能感知到签到福利
+  // 演示用途：弹过一次的标记只存在内存里（autoXxxShownRef），刷新页面会重新弹，不做跨刷新的持久化频控
   useEffect(() => {
-    if (!user || hasSignedToday) return;
-    if (showSignIn || showRealName || showCheckInRules || miniProgramOpen) return;
-    if (autoSignInShownRef.current) return;
-    const timer = setTimeout(() => {
-      autoSignInShownRef.current = true;
-      setShowSignIn(true);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [user, hasSignedToday, showSignIn, showRealName, showCheckInRules, miniProgramOpen]);
+    if (!user) return;
+    if (showSignIn || showRealName || showCheckInRules || miniProgramOpen || showRealNameReminder) return;
+
+    const needsRealNameReminder =
+      (user.verifyStatus === -1 || user.verifyStatus === 4) &&
+      !autoRealNameReminderShownRef.current &&
+      !isVerifyReminderSkippedToday();
+
+    if (needsRealNameReminder) {
+      const timer = setTimeout(() => {
+        autoRealNameReminderShownRef.current = true;
+        setShowRealNameReminder(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    autoRealNameReminderShownRef.current = true;
+
+    if (!hasSignedToday && !autoSignInShownRef.current) {
+      const timer = setTimeout(() => {
+        autoSignInShownRef.current = true;
+        setShowSignIn(true);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [user, hasSignedToday, showSignIn, showRealName, showCheckInRules, miniProgramOpen, showRealNameReminder]);
   const nextRewardDay = Math.min(signInStreak + 1, SIGN_IN_REWARD_CAP_DAYS);
   const nextReward = getSignInReward(nextRewardDay, isChangGong);
   const level = user?.level || 1;
@@ -259,7 +279,16 @@ export default function HomePage() {
         onClose={() => setShowSignIn(false)}
         onGoRealName={() => { setShowSignIn(false); setShowRealName(true); }}
       />
-      <RealNameDialog open={showRealName} onComplete={(info) => { setShowRealName(false); if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
+      <RealNameDialog open={showRealName} onComplete={(info) => { setShowRealName(false); if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt, documentExpireAt: info.documentExpireAt } as any); toast({ title: "实名认证成功" }); setTimeout(() => setShowSignIn(true), 500); }} onClose={() => setShowRealName(false)} />
+
+      <RealNameReminderDialog
+        open={showRealNameReminder}
+        onClose={() => setShowRealNameReminder(false)}
+        onConfirm={() => {
+          setShowRealNameReminder(false);
+          setShowRealName(true);
+        }}
+      />
       <CheckInRulesDialog open={showCheckInRules} onClose={() => setShowCheckInRules(false)} />
 
       {/* 下拉双语义：小幅/快速下拉→内容刷新指示；继续下拉过阈值→贴顶展开至视口 80% 的小程序面板 */}
