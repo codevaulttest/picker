@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { IdCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -48,6 +49,12 @@ export default function RealNameReminderDialog({ open, onClose, onConfirm }: Pro
     <Dialog open={open} onOpenChange={(v) => !v && handleDismiss()}>
       <DialogContent className={isDark ? "bg-game-bg-card-dark" : undefined}>
         <DialogHeader>
+          <div
+            className="w-16 h-16 rounded-button flex items-center justify-center mx-auto"
+            style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
+          >
+            <IdCard size={32} style={{ color: GAME.primary }} />
+          </div>
           <DialogTitle className={ink}>完善实名认证</DialogTitle>
           <DialogDescription className={inkSec}>
             您的实名认证信息不完善，将会影响您使用P客部分功能，提交身份证信息并完成人脸识别即可完善信息。
