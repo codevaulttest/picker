@@ -29,6 +29,8 @@ const TASK_ARC_SIZE = TASK_FAB_SIZE + TASK_ARC_COLLAR * 2;
 
 /** navShadow（box-shadow 语法）→ drop-shadow 语法，用于合并后的轮廓阴影 */
 const NAV_SHADOW_FILTER = `drop-shadow(${GAME.navShadow.replace(" 0 rgba", " rgba")})`;
+/** goo 滤镜高斯模糊的 stdDeviation，也是它会软化掉的外角半径，需要在滤镜外补方角块时用同一个值盖住 */
+const NAV_GOO_BLUR_RADIUS = 6;
 
 const TABS_IMG = [
   { key: "home", label: "P客", icon: HomeMark, path: "/" },
@@ -107,7 +109,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <svg width="0" height="0" aria-hidden focusable="false" className="absolute">
             <defs>
               <filter id="nav-goo" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="nav-goo-blur" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation={NAV_GOO_BLUR_RADIUS} result="nav-goo-blur" />
                 <feColorMatrix
                   in="nav-goo-blur"
                   mode="matrix"
@@ -137,7 +139,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* 主栏体 */}
             <div
-              className={`absolute inset-0 rounded-t-large ${
+              className={`absolute inset-0 ${
                 isDark ? "bg-game-bg-card-dark/95" : "bg-game-bg-card/95"
               }`}
               style={{
@@ -146,6 +148,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               }}
             />
           </div>
+
+          {/* goo 滤镜的高斯模糊会把栏体左右两个外角也软化成圆角；这里在滤镜外补两个未处理的方角块盖住，只留中段凸起弧的圆润过渡 */}
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute top-0 left-0 ${
+              isDark ? "bg-game-bg-card-dark/95" : "bg-game-bg-card/95"
+            }`}
+            style={{ width: NAV_GOO_BLUR_RADIUS, height: NAV_GOO_BLUR_RADIUS }}
+          />
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute top-0 right-0 ${
+              isDark ? "bg-game-bg-card-dark/95" : "bg-game-bg-card/95"
+            }`}
+            style={{ width: NAV_GOO_BLUR_RADIUS, height: NAV_GOO_BLUR_RADIUS }}
+          />
 
           {/* 5个Tab：侧栏均分，中间列=任务圆钮宽，邻格到圆钮边≈37px */}
           <div
