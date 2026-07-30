@@ -1,15 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Wrench, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { THEME, BRAND } from "@/config/app.config";
 import { registerUser } from "@/lib/mockBackend";
-import { demoDateDaysFromNow, isExpiringSoon } from "@/lib/realName";
+import {
+  demoDateDaysFromNow,
+  DOCUMENT_EXPIRE_SOON_DAYS,
+  isDocumentExpired,
+  isDocumentExpiringSoon,
+  isExpiringSoon,
+} from "@/lib/realName";
 import type { UserProfile } from "@/types";
 
 const EXPIRING_SOON_DEMO_DAYS = 20;
 const VERIFIED_DEMO_DAYS = 365 * 3;
+const DOCUMENT_OK_DEMO_DAYS = 365 * 10;
 
 /** 「即将到期」不是独立的后端状态，而是 verifyStatus=1 叠加临近的 verifyExpireAt，因此单独建模，不能简单按 verifyStatus 一一对应 */
 const VERIFY_STATUS_ITEMS: {
@@ -37,21 +45,57 @@ const VERIFY_STATUS_ITEMS: {
   { key: "6", short: "已过期", active: (u) => u?.verifyStatus === 6, apply: () => ({ verifyStatus: 6, verifyExpireAt: null }) },
 ];
 
+/** 证件有效期与平台认证状态独立；只改 documentExpireAt */
+const DOCUMENT_STATUS_ITEMS: {
+  key: string;
+  short: string;
+  active: (u: UserProfile | null) => boolean;
+  apply: () => Pick<UserProfile, "documentExpireAt">;
+}[] = [
+  {
+    key: "ok",
+    short: "证件正常",
+    active: (u) =>
+      !!u?.documentExpireAt &&
+      !isDocumentExpired(u.documentExpireAt) &&
+      !isDocumentExpiringSoon(u.documentExpireAt),
+    apply: () => ({ documentExpireAt: demoDateDaysFromNow(DOCUMENT_OK_DEMO_DAYS) }),
+  },
+  {
+    key: "soon",
+    short: "证件即将过期",
+    active: (u) => isDocumentExpiringSoon(u?.documentExpireAt),
+    apply: () => ({ documentExpireAt: demoDateDaysFromNow(Math.min(20, DOCUMENT_EXPIRE_SOON_DAYS)) }),
+  },
+  {
+    key: "expired",
+    short: "证件过期",
+    active: (u) => isDocumentExpired(u?.documentExpireAt),
+    apply: () => ({ documentExpireAt: demoDateDaysFromNow(-30) }),
+  },
+];
+
 /** 开发者调试面板 — 右下角贴边绿色半胶囊，仅本次会话隐藏（刷新后重新展示） */
 export default function DevPanel() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
   const setAssets = useStore((s) => s.setAssets);
   const accounts = useStore((s) => s.accounts);
   const upsertAccount = useStore((s) => s.upsertAccount);
-  const setGuestMode = useStore((s) => s.setGuestMode);
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
 
   if (hidden) return null;
 
   const handleVerifyStatusItem = (item: (typeof VERIFY_STATUS_ITEMS)[number]) => {
+    if (!user) return;
+    setUser({ ...user, ...item.apply() });
+    toast({ title: `已切换为「${item.short}」` });
+  };
+
+  const handleDocumentStatusItem = (item: (typeof DOCUMENT_STATUS_ITEMS)[number]) => {
     if (!user) return;
     setUser({ ...user, ...item.apply() });
     toast({ title: `已切换为「${item.short}」` });
@@ -76,15 +120,14 @@ export default function DevPanel() {
     if (!on) {
       if (user) upsertAccount(user);
       setUser(null);
-      setGuestMode(true);
       localStorage.removeItem("pke_user_id");
       localStorage.removeItem("pke_avatar");
       localStorage.removeItem("pke_nickname");
-      toast({ title: "已切换为未登录（游客）" });
+      toast({ title: "已切换为未登录" });
+      navigate("/login", { replace: true });
       return;
     }
 
-    setGuestMode(false);
     const restore = accounts[accounts.length - 1];
     if (restore) {
       setUser(restore);
@@ -101,6 +144,7 @@ export default function DevPanel() {
       localStorage.setItem("pke_avatar", avatar);
     }
     toast({ title: "已切换为已登录" });
+    navigate("/", { replace: true });
   };
 
   return (
@@ -132,7 +176,7 @@ export default function DevPanel() {
           </div>
 
           <div className="mb-3">
-            <span className="text-body text-game-ink-secondary block mb-1.5">实名认证状态</span>
+            <span className="text-body text-game-ink-secondary block mb-1.5">认证状态</span>
             <div className="flex flex-wrap gap-1">
               {VERIFY_STATUS_ITEMS.map((item) => (
                 <button
@@ -140,6 +184,27 @@ export default function DevPanel() {
                   type="button"
                   disabled={!user}
                   onClick={() => handleVerifyStatusItem(item)}
+                  className={`h-6 px-1.5 rounded-button text-[10px] font-bold disabled:opacity-40 ${
+                    item.active(user)
+                      ? "bg-game-primary text-white"
+                      : "bg-game-bg-muted text-game-ink-secondary"
+                  }`}
+                >
+                  {item.short}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <span className="text-body text-game-ink-secondary block mb-1.5">证件状态</span>
+            <div className="flex flex-wrap gap-1">
+              {DOCUMENT_STATUS_ITEMS.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  disabled={!user}
+                  onClick={() => handleDocumentStatusItem(item)}
                   className={`h-6 px-1.5 rounded-button text-[10px] font-bold disabled:opacity-40 ${
                     item.active(user)
                       ? "bg-game-primary text-white"

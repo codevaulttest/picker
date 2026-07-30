@@ -13,9 +13,6 @@ interface Props {
   pkeId?: string;
   verifyStatus?: VerifyStatus;
   level: number;
-  /** false while logged out — taps open the login flow instead of profile editing */
-  loggedIn?: boolean;
-  onAvatarClick: () => void;
   onAvatarChange?: (url: string) => void;
   onNameChange?: (name: string) => void;
 }
@@ -26,8 +23,6 @@ export default function PageHeader({
   pkeId,
   verifyStatus,
   level,
-  loggedIn = true,
-  onAvatarClick,
   onAvatarChange,
   onNameChange,
 }: Props) {
@@ -36,10 +31,7 @@ export default function PageHeader({
   const lang = useStore((s) => s.lang);
   const [editOpen, setEditOpen] = useState(false);
 
-  const handleIdentityClick = () => {
-    if (loggedIn) setEditOpen(true);
-    else onAvatarClick();
-  };
+  const handleIdentityClick = () => setEditOpen(true);
 
   const savedAvatar = localStorage.getItem("pke_avatar");
   const savedName = localStorage.getItem("pke_nickname");
@@ -49,7 +41,7 @@ export default function PageHeader({
     avatar.includes("avataaars");
   const displayAvatar =
     savedAvatar || (!isPlaceholderAvatar ? avatar : null) || BRAND.defaultAvatar(pkeId || "guest");
-  const displayName = loggedIn ? savedName?.trim() || name : lang === "en" ? "Not logged in" : lang === "zh-TW" ? "尚未登入" : "未登录";
+  const displayName = savedName?.trim() || name;
 
   const displayPkeId = resolveDisplayPkeId(pkeId);
 
@@ -128,46 +120,32 @@ export default function PageHeader({
                   >
                     {displayName}
                   </h2>
-                  {loggedIn && (
-                    <BadgeCheck
-                      size={20}
-                      className="flex-shrink-0"
-                      style={{ color: badgeColor }}
-                      fill={verified ? GAME.primary : "transparent"}
-                      stroke={verified ? GAME.onPrimary : badgeColor}
-                    />
-                  )}
+                  <BadgeCheck
+                    size={20}
+                    className="flex-shrink-0"
+                    style={{ color: badgeColor }}
+                    fill={verified ? GAME.primary : "transparent"}
+                    stroke={verified ? GAME.onPrimary : badgeColor}
+                  />
                 </button>
-                {loggedIn ? (
-                  <button
-                    type="button"
-                    onClick={handleCopyId}
-                    className="flex items-center gap-1 mt-1.5"
+                <button
+                  type="button"
+                  onClick={handleCopyId}
+                  className="flex items-center gap-1 mt-1.5"
+                >
+                  <span
+                    className={`text-caption tabular-nums ${
+                      isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"
+                    }`}
                   >
-                    <span
-                      className={`text-caption tabular-nums ${
-                        isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary"
-                      }`}
-                    >
-                      ID: {displayPkeId}
-                    </span>
-                    <Copy
-                      size={12}
-                      className={isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}
-                      style={{ transform: "scaleX(-1)" }}
-                    />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={onAvatarClick}
-                    className="mt-1.5"
-                  >
-                    <span className="text-grid-label font-semibold text-game-primary-text">
-                      {zh ? "点击登录" : "Tap to log in"}
-                    </span>
-                  </button>
-                )}
+                    ID: {displayPkeId}
+                  </span>
+                  <Copy
+                    size={12}
+                    className={isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary"}
+                    style={{ transform: "scaleX(-1)" }}
+                  />
+                </button>
               </div>
 
               <button
@@ -181,22 +159,20 @@ export default function PageHeader({
             </div>
 
             {/* 等级 pill — 紧贴 ID 行；primary-soft / primary-soft-dark 底 */}
-            {loggedIn && (
-              <div
-                className="mt-2 inline-flex w-fit items-center gap-2 rounded-pill"
-                style={{
-                  background: isDark ? GAME.primarySoftDark : GAME.primarySoft,
-                  height: 28,
-                  paddingLeft: 8,
-                  paddingRight: 8,
-                }}
-              >
-                <span className="flex-shrink-0 text-game-primary-text">
-                  <span className="text-caption">称号：</span>
-                  <span className="text-hud-label">{lvConfig.cnName}</span>
-                </span>
-              </div>
-            )}
+            <div
+              className="mt-2 inline-flex w-fit items-center gap-2 rounded-pill"
+              style={{
+                background: isDark ? GAME.primarySoftDark : GAME.primarySoft,
+                height: 28,
+                paddingLeft: 8,
+                paddingRight: 8,
+              }}
+            >
+              <span className="flex-shrink-0 text-game-primary-text">
+                <span className="text-caption">称号：</span>
+                <span className="text-hud-label">{lvConfig.cnName}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>

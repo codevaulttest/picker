@@ -65,7 +65,7 @@ export default function SwitchAccountSheet({ open, onOpenChange }: Props) {
 
   const handleAddAccount = () => {
     onOpenChange(false);
-    navigate("/login");
+    navigate("/login", { state: { from: "addAccount" } });
   };
 
   const confirmRemove = () => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
-import { ChevronLeft, Globe, ChevronDown } from "lucide-react";
+import { useLocation, useNavigate } from "react-router";
+import { ChevronLeft, Globe, ChevronDown, Fingerprint } from "lucide-react";
 import { type CountryCode } from "libphonenumber-js/min";
 import { useStore } from "@/stores";
 import { GAME, BRAND } from "@/config/app.config";
@@ -10,6 +10,7 @@ import { registerUser } from "@/lib/mockBackend";
 import { DEFAULT_COUNTRY, findCountry } from "@/lib/phoneCountries";
 import HomeMark from "@/components/icons/HomeMark";
 import CountryCodeSheet from "@/components/dialogs/CountryCodeSheet";
+import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 
 const CTA_STYLE = {
   background: `linear-gradient(135deg, ${GAME.primary}, ${GAME.primaryLight})`,
@@ -18,18 +19,23 @@ const CTA_STYLE = {
 } as const;
 
 const RESEND_SECONDS = 60;
+type AuthTab = "login" | "register";
 type LoginMode = "code" | "password";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // 仅「添加账号」入口带着可回退的历史记录进来才展示返回按钮；
+  // 其余场景（未登录强制跳转、开发者面板切换为未登录）落地即是登录页，没有可回退的上一页
+  const canGoBack = (location.state as { from?: string } | null)?.from === "addAccount";
   const { t } = useI18n();
   const { toast } = useToast();
   const isDark = useStore((s) => s.isDark);
   const setUser = useStore((s) => s.setUser);
   const setAssets = useStore((s) => s.setAssets);
-  const setGuestMode = useStore((s) => s.setGuestMode);
   const upsertAccount = useStore((s) => s.upsertAccount);
 
+  const [authTab, setAuthTab] = useState<AuthTab>("login");
   const [mode, setMode] = useState<LoginMode>("code");
   const [account, setAccount] = useState("");
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
@@ -38,6 +44,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [pending, setPending] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => {
@@ -50,8 +57,6 @@ export default function LoginPage() {
   const fieldSurface = isDark
     ? "bg-game-bg-card-dark border-game-border-light-dark text-game-ink-dark"
     : "bg-game-bg-card border-game-border-light text-game-ink";
-  const tabActive = isDark ? "bg-game-bg-card-dark text-game-ink-dark shadow-warm-dark" : "bg-game-bg-card text-game-ink shadow-warm";
-  const tabInactive = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
   const rowPress = isDark ? "active:bg-game-bg-muted-dark" : "active:bg-game-bg-muted/80";
 
   const trimmedAccount = account.trim();
@@ -59,7 +64,8 @@ export default function LoginPage() {
   const isEmailLike = trimmedAccount.includes("@");
   const countryOption = findCountry(country);
   const loginIdentifier = trimmedAccount && !isEmailLike ? `+${countryOption.dial}${trimmedAccount}` : trimmedAccount;
-  const secondary = mode === "code" ? code.trim() : password.trim();
+  // 注册固定走验证码方式，登录支持验证码/密码二选一
+  const secondary = authTab === "register" || mode === "code" ? code.trim() : password.trim();
   const canSubmit = trimmedAccount.length > 0 && secondary.length > 0 && !pending;
 
   const startCooldown = () => {
@@ -85,27 +91,53 @@ export default function LoginPage() {
     });
   };
 
-  const handleLogin = async () => {
-    if (!canSubmit) return;
+  const completeLogin = async (identifier: string, successTitle: string) => {
     setPending(true);
-    const data = await registerUser(loginIdentifier);
+    const data = await registerUser(identifier);
     const avatar = BRAND.defaultAvatar(data.pkeId);
     const profile = { ...data.profile, avatar };
     setUser(profile);
     if (data.assets) setAssets(data.assets);
-    setGuestMode(false);
     upsertAccount(profile);
     localStorage.setItem("pke_user_id", data.pkeId);
     localStorage.setItem("pke_avatar", avatar);
-    localStorage.setItem("pke_nickname", loginIdentifier);
+    localStorage.setItem("pke_nickname", identifier);
     setPending(false);
-    toast({ title: t.settings.accountAdded });
-    navigate(-1);
+    toast({ title: successTitle });
+    // 未登录访问首页会被强制跳转到登录页（无可回退的历史记录），登录成功后统一落到首页
+    navigate("/", { replace: true });
   };
 
-  const handleGuest = () => {
-    setGuestMode(true);
-    navigate(-1);
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    await completeLogin(loginIdentifier, authTab === "register" ? t.settings.accountCreated : t.settings.accountAdded);
+  };
+
+  const handleFingerprintLogin = async () => {
+    if (pending) return;
+    if (!trimmedAccount) {
+      toast({ title: t.settings.fingerprintNeedAccount, variant: "info" });
+      return;
+    }
+    setPending(true);
+    toast({ title: t.settings.fingerprintScanning });
+    await completeLogin(loginIdentifier, t.settings.accountAdded);
+  };
+
+  const handleForgotPassword = () => {
+    if (!trimmedAccount) {
+      toast({ title: t.settings.forgotPasswordNeedAccount });
+      return;
+    }
+    setShowForgotPassword(true);
+  };
+
+  const switchAuthTab = (tab: AuthTab) => {
+    if (tab === authTab) return;
+    setAuthTab(tab);
+    setMode("code");
+    setCode("");
+    setPassword("");
   };
 
   return (
@@ -117,14 +149,16 @@ export default function LoginPage() {
           aria-hidden
         />
         <div className="relative z-10 flex items-center h-11">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="relative z-10 flex size-11 items-center justify-center -ml-2 rounded-button"
-            aria-label={t.settings.back}
-          >
-            <ChevronLeft size={22} strokeWidth={2} className={ink} />
-          </button>
+          {canGoBack && (
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="relative z-10 flex size-11 items-center justify-center -ml-2 rounded-button"
+              aria-label={t.settings.back}
+            >
+              <ChevronLeft size={22} strokeWidth={2} className={ink} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -166,24 +200,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className={`mt-4 inline-flex items-center gap-1 rounded-button p-1 ${isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"}`}>
-            <button
-              type="button"
-              onClick={() => setMode("code")}
-              className={`px-3 py-1.5 rounded-button text-body transition-colors ${mode === "code" ? tabActive : tabInactive}`}
-            >
-              {t.settings.loginByCode}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("password")}
-              className={`px-3 py-1.5 rounded-button text-body transition-colors ${mode === "password" ? tabActive : tabInactive}`}
-            >
-              {t.settings.loginByPassword}
-            </button>
-          </div>
-
-          {mode === "code" ? (
+          {authTab === "register" || mode === "code" ? (
             <div className="mt-3 flex items-center gap-2">
               <input
                 type="text"
@@ -193,7 +210,7 @@ export default function LoginPage() {
                 placeholder={t.settings.verificationCodePlaceholder}
                 onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && canSubmit) handleLogin();
+                  if (e.key === "Enter" && canSubmit) handleSubmit();
                 }}
                 className={`flex-1 h-12 px-3 rounded-button border text-task-title outline-none transition-shadow focus:border-game-primary focus:ring-[3px] focus:ring-game-focus-ring dark:focus:ring-game-focus-ring-dark placeholder:text-game-ink-disabled dark:placeholder:text-game-ink-disabled-dark ${fieldSurface}`}
               />
@@ -208,39 +225,94 @@ export default function LoginPage() {
               </button>
             </div>
           ) : (
-            <input
-              type="password"
-              value={password}
-              placeholder={t.settings.passwordPlaceholder}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && canSubmit) handleLogin();
-              }}
-              className={`mt-3 w-full h-12 px-3 rounded-button border text-task-title outline-none transition-shadow focus:border-game-primary focus:ring-[3px] focus:ring-game-focus-ring dark:focus:ring-game-focus-ring-dark placeholder:text-game-ink-disabled dark:placeholder:text-game-ink-disabled-dark ${fieldSurface}`}
-            />
+            <>
+              <input
+                type="password"
+                value={password}
+                placeholder={t.settings.passwordPlaceholder}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && canSubmit) handleSubmit();
+                }}
+                className={`mt-3 w-full h-12 px-3 rounded-button border text-task-title outline-none transition-shadow focus:border-game-primary focus:ring-[3px] focus:ring-game-focus-ring dark:focus:ring-game-focus-ring-dark placeholder:text-game-ink-disabled dark:placeholder:text-game-ink-disabled-dark ${fieldSurface}`}
+              />
+            </>
+          )}
+
+          {authTab === "login" && (
+            <div className="mt-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setMode(mode === "code" ? "password" : "code")}
+                className="py-2 -my-2 text-body font-medium"
+                style={{ color: GAME.primaryText }}
+              >
+                {mode === "code" ? t.settings.usePasswordLogin : t.settings.useCodeLogin}
+              </button>
+              {mode === "password" && (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="py-2 -my-2 text-body font-medium"
+                  style={{ color: GAME.primaryText }}
+                >
+                  {t.settings.forgotPassword}
+                </button>
+              )}
+            </div>
           )}
 
           <button
             type="button"
-            onClick={handleLogin}
+            onClick={handleSubmit}
             disabled={!canSubmit}
             className="w-full h-12 mt-5 rounded-button text-section-title border-0 disabled:opacity-40 transition-opacity"
             style={CTA_STYLE}
           >
-            {pending ? t.settings.loggingIn : t.settings.loginOrRegister}
+            {authTab === "register"
+              ? pending
+                ? t.settings.registeringIn
+                : t.settings.registerButton
+              : pending
+                ? t.settings.loggingIn
+                : t.settings.authTabLogin}
           </button>
 
           <button
             type="button"
-            onClick={handleGuest}
-            className={`w-full h-11 mt-3 rounded-button text-body ${inkSec}`}
+            onClick={() => switchAuthTab(authTab === "login" ? "register" : "login")}
+            className={`w-full mt-2 py-2 text-body text-center ${inkSec}`}
           >
-            {t.settings.continueAsGuest}
+            {authTab === "login" ? t.settings.noAccountPrompt : t.settings.haveAccountPrompt}
+            <span className="font-semibold" style={{ color: GAME.primaryText }}>
+              {authTab === "login" ? t.settings.registerNow : t.settings.goToLogin}
+            </span>
           </button>
         </div>
 
+        {authTab === "login" && (
+          <div className="w-full mt-6 flex flex-col items-center gap-3">
+            <div className="w-full flex items-center gap-2">
+              <div className={`h-px flex-1 ${isDark ? "bg-game-border-light-dark" : "bg-game-border-light"}`} />
+              <span className={`text-caption ${inkDis}`}>{t.settings.orDivider}</span>
+              <div className={`h-px flex-1 ${isDark ? "bg-game-border-light-dark" : "bg-game-border-light"}`} />
+            </div>
+            <button
+              type="button"
+              onClick={handleFingerprintLogin}
+              disabled={pending}
+              aria-label={t.settings.fingerprintLogin}
+              className="w-14 h-14 rounded-button flex items-center justify-center disabled:opacity-40 transition-opacity"
+              style={{ background: isDark ? GAME.primarySoftDark : GAME.primarySoft }}
+            >
+              <Fingerprint size={28} style={{ color: GAME.primary }} />
+            </button>
+            <span className={`text-caption ${inkSec}`}>{t.settings.fingerprintLogin}</span>
+          </div>
+        )}
+
         <p className={`mt-8 text-caption text-center ${inkDis}`}>
-          {t.settings.loginDemoNote}
+          {authTab === "register" ? t.settings.registerDemoNote : t.settings.loginDemoNote}
         </p>
       </div>
 
@@ -249,6 +321,14 @@ export default function LoginPage() {
         value={country}
         onSelect={setCountry}
         onClose={() => setShowCountryPicker(false)}
+      />
+
+      <ChangePasswordDialog
+        open={showForgotPassword}
+        email={loginIdentifier}
+        kind="login"
+        onClose={() => setShowForgotPassword(false)}
+        onComplete={() => setPassword("")}
       />
     </div>
   );

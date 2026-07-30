@@ -40,15 +40,9 @@ interface AppState {
   accounts: UserProfile[];
   upsertAccount: (account: UserProfile) => void;
   removeAccount: (pkeId: string) => void;
-
-  // Guest mode — true once the user has explicitly logged out; prevents
-  // auto-registering a throwaway guest profile until they log back in.
-  guestMode: boolean;
-  setGuestMode: (v: boolean) => void;
 }
 
 const ACCOUNTS_KEY = "pke_accounts";
-const GUEST_MODE_KEY = "pke_guest_mode";
 
 function loadAccounts(): UserProfile[] {
   try {
@@ -114,10 +108,4 @@ export const useStore = create<AppState>((set) => ({
     saveAccounts(accounts);
     return { accounts };
   }),
-
-  guestMode: localStorage.getItem(GUEST_MODE_KEY) === "1",
-  setGuestMode: (v) => {
-    localStorage.setItem(GUEST_MODE_KEY, v ? "1" : "0");
-    set({ guestMode: v });
-  },
 }));

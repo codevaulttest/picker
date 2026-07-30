@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { Info, Wallet, ChevronRight, Check, LineChart, CalendarCheck, ScanLine, Image, BadgeCheck, Loader2Icon } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { getUserProfile, registerUser, getSignInReward, SIGN_IN_REWARD_CAP_DAYS } from "@/lib/mockBackend";
+import { useQuery } from "@tanstack/react-query";
+import { getUserProfile, getSignInReward, SIGN_IN_REWARD_CAP_DAYS } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
 import { GAME, HOME_FEATURES, BRAND, getLevel, MINI_PROGRAMS } from "@/config/app.config";
@@ -37,7 +37,6 @@ export default function HomePage() {
   const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
   const setAssets = useStore((s) => s.setAssets);
-  const guestMode = useStore((s) => s.guestMode);
   const isDark = useStore((s) => s.isDark);
   const setHideBottomNav = useStore((s) => s.setHideBottomNav);
   const { t } = useI18n();
@@ -163,22 +162,11 @@ export default function HomePage() {
 
   const guestName = t.home.guestName;
 
-  const registerMut = useMutation({
-    mutationFn: (vars: { name: string }) => registerUser(vars.name),
-    onSuccess: (data) => {
-      localStorage.setItem("pke_user_id", data.pkeId);
-      const profile = data.profile as any;
-      setUser({ ...profile, userId: data.userId, pkeId: data.pkeId, name: profile?.realName || guestName, avatar: BRAND.defaultAvatar(data.pkeId) } as any);
-      if (data.assets) setAssets(data.assets as any);
-    },
-  });
-
   const { data: profileData } = useQuery({
     queryKey: ["user", "profile", pkeId],
     queryFn: () => getUserProfile(pkeId || ""),
     enabled: !!pkeId && !user,
   });
-  useEffect(() => { if (!guestMode && !pkeId && !user && !registerMut.isPending) registerMut.mutate({ name: "P客" + Math.floor(Math.random() * 10000) }); }, [pkeId, user, guestMode]);
   useEffect(() => {
     if (profileData) { setUser({ ...profileData, name: profileData.name || profileData.realName || guestName, avatar: profileData.avatar || BRAND.defaultAvatar(profileData.pkeId) } as any); if (profileData.assets) { const a: Record<string, number> = {}; for (const [k, v] of Object.entries(profileData.assets)) a[k] = typeof v === "string" ? Number(v) : (v as number); setAssets(a as any); } }
   }, [profileData]);

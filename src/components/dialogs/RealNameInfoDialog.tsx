@@ -11,7 +11,7 @@ import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
 import { findCountry, type CountryCode } from "@/lib/phoneCountries";
 import { DOCUMENT_LABELS, type DocumentType } from "@/lib/documentTypes";
-import { isExpiringSoon, VERIFY_STATUS_META, type VerifyStatus } from "@/lib/realName";
+import { isDocumentExpired, isDocumentExpiringSoon, isExpiringSoon, VERIFY_STATUS_META, type VerifyStatus } from "@/lib/realName";
 
 interface Props {
   open: boolean;
@@ -20,6 +20,8 @@ interface Props {
   documentType?: DocumentType | null;
   maskedName?: string | null;
   expireAt?: string | null;
+  /** 证件本身有效期，与平台认证到期无关 */
+  documentExpireAt?: string | null;
   onClose: () => void;
   onReverify?: () => void;
   onRenew?: () => void;
@@ -44,6 +46,7 @@ export default function RealNameInfoDialog({
   documentType,
   maskedName,
   expireAt,
+  documentExpireAt,
   onClose,
   onReverify,
   onRenew,
@@ -55,12 +58,14 @@ export default function RealNameInfoDialog({
   const Flag = country?.Flag;
   const meta = status !== undefined ? VERIFY_STATUS_META[status] : undefined;
   const isDetail = meta?.action === "detail" || meta?.action === "expired";
-  const expiringSoon = status === 1 && isExpiringSoon(expireAt);
+  const verifyExpiringSoon = status === 1 && isExpiringSoon(expireAt);
+  const docExpired = isDocumentExpired(documentExpireAt);
+  const docExpiringSoon = isDocumentExpiringSoon(documentExpireAt);
 
-  const iconBg = expiringSoon
+  const iconBg = verifyExpiringSoon || docExpired || docExpiringSoon
     ? isDark ? GAME.warningSoftDark : GAME.warningSoft
     : isDark ? GAME.successSoftDark : GAME.successSoft;
-  const iconColor = expiringSoon ? GAME.warning : GAME.success;
+  const iconColor = verifyExpiringSoon || docExpired || docExpiringSoon ? GAME.warning : GAME.success;
   const Icon = IdCard;
   const StatusIcon =
     meta?.action === "pending" ? Hourglass : meta?.action === "rejected" ? XCircle : AlertTriangle;
@@ -70,11 +75,19 @@ export default function RealNameInfoDialog({
       : isDark ? GAME.warningSoftDark : GAME.warningSoft;
   const statusIconColor = meta?.action === "rejected" ? GAME.error : GAME.warning;
 
+  const documentStatusLabel = !documentExpireAt
+    ? "—"
+    : docExpired
+      ? "证件过期"
+      : docExpiringSoon
+        ? "证件即将过期"
+        : "证件正常";
+
   const rows = [
     {
       label: "认证状态",
-      value: expiringSoon ? "即将到期" : meta?.label ?? "已认证",
-      tone: expiringSoon || meta?.tone === "warning" ? GAME.warning : GAME.success,
+      value: verifyExpiringSoon ? "即将到期" : meta?.label ?? "已认证",
+      tone: verifyExpiringSoon || meta?.tone === "warning" ? GAME.warning : GAME.success,
     },
     { label: "真实姓名", value: maskedName || "—" },
     { label: "证件类型", value: documentType ? DOCUMENT_LABELS[documentType] : "—" },
@@ -90,6 +103,12 @@ export default function RealNameInfoDialog({
       ),
     },
     { label: "认证到期时间", value: expireAt || "—" },
+    {
+      label: "证件状态",
+      value: documentStatusLabel,
+      tone: docExpired || docExpiringSoon ? GAME.warning : undefined,
+    },
+    { label: "证件有效期", value: documentExpireAt || "—" },
   ];
 
   const statusCopy = status !== undefined ? STATUS_COPY[status] : undefined;

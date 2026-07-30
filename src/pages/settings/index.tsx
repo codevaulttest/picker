@@ -14,7 +14,7 @@ import PullToRefresh from "@/components/layout/PullToRefresh";
 import RealNameDialog, { type RealNameInfo } from "@/components/dialogs/RealNameDialog";
 import RealNameInfoDialog from "@/components/dialogs/RealNameInfoDialog";
 import SwitchAccountSheet from "@/components/dialogs/SwitchAccountSheet";
-import { createDemoRealNameInfo, extendExpireByOneYear, isExpiringSoon, isVerified } from "@/lib/realName";
+import { createDemoRealNameInfo, extendExpireByOneYear, isDocumentExpired, isDocumentExpiringSoon, isExpiringSoon, isVerified } from "@/lib/realName";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -58,13 +58,14 @@ export default function SettingsPage() {
   const inkSec = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
   const inkDis = isDark ? "text-game-ink-disabled-dark" : "text-game-ink-disabled";
 
-  // 已认证但尚未在本次访问中采集过认证信息时，用演示数据兜底展示；到期日优先用账号上持久化的 verifyExpireAt
+  // 已认证但尚未在本次访问中采集过认证信息时，用演示数据兜底展示；到期日优先用账号上持久化的字段
   const displayedRealNameInfo =
     realNameInfo ??
     (user && isVerified(user.verifyStatus)
       ? {
           ...createDemoRealNameInfo(user.pkeId),
           ...(user.verifyExpireAt ? { expireAt: user.verifyExpireAt } : {}),
+          ...(user.documentExpireAt ? { documentExpireAt: user.documentExpireAt } : {}),
         }
       : null);
 
@@ -76,7 +77,7 @@ export default function SettingsPage() {
       icon: Shield,
       color: GAME.infoBlue,
       bg: isDark ? GAME.infoSoftDark : GAME.infoSoft,
-      action: () => navigate(user ? "/security" : "/login"),
+      action: () => navigate("/security"),
     },
     {
       key: "support",
@@ -107,8 +108,6 @@ export default function SettingsPage() {
         pkeId={user?.pkeId || pkeId || undefined}
         verifyStatus={user?.verifyStatus}
         level={user?.level || 1}
-        loggedIn={!!user}
-        onAvatarClick={() => navigate("/login")}
         onAvatarChange={(url) => setUser({ ...user, avatar: url } as any)}
         onNameChange={(name) => setUser({ ...user, name } as any)}
       />
@@ -166,6 +165,36 @@ export default function SettingsPage() {
             <IdCard size={18} className="flex-shrink-0" style={{ color: GAME.warning }} />
             <span className={`flex-1 text-left text-grid-label ${ink}`}>
               认证将于 {user.verifyExpireAt} 到期，请及时续费
+            </span>
+            <ChevronRight size={16} style={{ color: GAME.warning }} />
+          </button>
+        </section>
+      )}
+      {user && isDocumentExpired(user.documentExpireAt) && (
+        <section className="mx-3.5 mt-1 flex-shrink-0">
+          <button
+            onClick={() => setShowRealNameInfo(true)}
+            className="w-full flex items-center gap-2.5 px-4 py-3 rounded-card transition-colors active:brightness-95"
+            style={{ background: isDark ? GAME.warningSoftDark : GAME.warningSoft }}
+          >
+            <IdCard size={18} className="flex-shrink-0" style={{ color: GAME.warning }} />
+            <span className={`flex-1 text-left text-grid-label ${ink}`}>
+              证件已于 {user.documentExpireAt} 过期，请更新证件信息
+            </span>
+            <ChevronRight size={16} style={{ color: GAME.warning }} />
+          </button>
+        </section>
+      )}
+      {user && isDocumentExpiringSoon(user.documentExpireAt) && (
+        <section className="mx-3.5 mt-1 flex-shrink-0">
+          <button
+            onClick={() => setShowRealNameInfo(true)}
+            className="w-full flex items-center gap-2.5 px-4 py-3 rounded-card transition-colors active:brightness-95"
+            style={{ background: isDark ? GAME.warningSoftDark : GAME.warningSoft }}
+          >
+            <IdCard size={18} className="flex-shrink-0" style={{ color: GAME.warning }} />
+            <span className={`flex-1 text-left text-grid-label ${ink}`}>
+              证件将于 {user.documentExpireAt} 过期，请及时更新
             </span>
             <ChevronRight size={16} style={{ color: GAME.warning }} />
           </button>
@@ -245,7 +274,7 @@ export default function SettingsPage() {
         onComplete={(info) => {
           setShowRealName(false);
           setRealNameInfo(info);
-          if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt } as any);
+          if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt, documentExpireAt: info.documentExpireAt } as any);
           toast({ title: "实名认证成功" });
         }}
         onRenewComplete={() => {
@@ -266,6 +295,7 @@ export default function SettingsPage() {
         documentType={displayedRealNameInfo?.documentType}
         maskedName={displayedRealNameInfo?.maskedName}
         expireAt={displayedRealNameInfo?.expireAt}
+        documentExpireAt={user?.documentExpireAt ?? displayedRealNameInfo?.documentExpireAt}
         onClose={() => setShowRealNameInfo(false)}
         onRenew={() => {
           setShowRealNameInfo(false);

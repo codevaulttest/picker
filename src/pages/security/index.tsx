@@ -234,13 +234,14 @@ export default function SecurityPage() {
     });
   };
 
-  // 已认证/已过期但尚未在本次流程中采集过认证信息（如历史数据）时，用演示数据兜底展示；到期日优先用用户身上已持久化的 verifyExpireAt，保持和"我的"页的提醒一致
+  // 已认证/已过期但尚未在本次流程中采集过认证信息（如历史数据）时，用演示数据兜底展示；到期日优先用用户身上已持久化的字段
   const displayedRealNameInfo =
     realNameInfo ??
     (user && (isVerified(user.verifyStatus) || user.verifyStatus === 6)
       ? {
           ...createDemoRealNameInfo(user.pkeId, undefined, undefined, user.verifyStatus === 6),
           ...(user.verifyExpireAt ? { expireAt: user.verifyExpireAt } : {}),
+          ...(user.documentExpireAt ? { documentExpireAt: user.documentExpireAt } : {}),
         }
       : null);
 
@@ -549,7 +550,7 @@ export default function SecurityPage() {
         onComplete={(info) => {
           setShowRealName(false);
           setRealNameInfo(info);
-          if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt } as any);
+          if (user) setUser({ ...user, verifyStatus: 1, verifyExpireAt: info.expireAt, documentExpireAt: info.documentExpireAt } as any);
           toast({ title: "实名认证成功" });
         }}
         onRenewComplete={() => {
@@ -570,6 +571,7 @@ export default function SecurityPage() {
         documentType={displayedRealNameInfo?.documentType}
         maskedName={displayedRealNameInfo?.maskedName}
         expireAt={displayedRealNameInfo?.expireAt}
+        documentExpireAt={user?.documentExpireAt ?? displayedRealNameInfo?.documentExpireAt}
         onClose={() => setShowRealNameInfo(false)}
         onReverify={() => {
           setShowRealNameInfo(false);

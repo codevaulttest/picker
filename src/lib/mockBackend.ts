@@ -105,6 +105,8 @@ function addDays(dateStr: string, n: number): string {
 function migrateProfile(profile: UserProfile): UserProfile {
   return {
     ...profile,
+    verifyExpireAt: profile.verifyExpireAt ?? null,
+    documentExpireAt: profile.documentExpireAt ?? null,
     lastCheckInDate: profile.lastCheckInDate ?? null,
     signInStreak: profile.signInStreak ?? 0,
     pendingSignInReward: profile.pendingSignInReward ?? 0,
@@ -175,6 +177,7 @@ export async function registerUser(name: string) {
     realName: "",
     verifyStatus: -1,
     verifyExpireAt: null,
+    documentExpireAt: null,
     level: 1,
     phone: null,
     email: null,
