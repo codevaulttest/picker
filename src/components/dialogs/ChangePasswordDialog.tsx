@@ -284,11 +284,13 @@ export default function ChangePasswordDialog({ open, email, kind = "login", onCl
                   }`}
                 />
               </div>
-              {newPasswordError && (
-                <p className="mt-1.5 text-caption" style={{ color: GAME.error }}>
-                  {newPasswordError}
-                </p>
-              )}
+              <p
+                className={`mt-1.5 text-caption ${newPasswordError ? "" : inkDis}`}
+                style={newPasswordError ? { color: GAME.error } : undefined}
+              >
+                {newPasswordError ||
+                  (zh ? `密码至少 ${MIN_PASSWORD_LENGTH} 位` : `At least ${MIN_PASSWORD_LENGTH} characters`)}
+              </p>
             </div>
 
             <div className="w-full">

@@ -19,6 +19,7 @@ const CTA_STYLE = {
 } as const;
 
 const RESEND_SECONDS = 60;
+const EMAIL_DOMAINS = ["qq.com", "163.com", "126.com", "gmail.com", "outlook.com", "hotmail.com", "sina.com"];
 type AuthTab = "login" | "register";
 type LoginMode = "code" | "password";
 
@@ -38,6 +39,7 @@ export default function LoginPage() {
   const [authTab, setAuthTab] = useState<AuthTab>("login");
   const [mode, setMode] = useState<LoginMode>("code");
   const [account, setAccount] = useState("");
+  const [accountFocused, setAccountFocused] = useState(false);
   const [country, setCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [code, setCode] = useState("");
@@ -62,8 +64,21 @@ export default function LoginPage() {
   const trimmedAccount = account.trim();
   // 邮箱登录不需要国际区号；含 @ 时视为邮箱，不含时视为手机号并拼上所选国家/地区区号
   const isEmailLike = trimmedAccount.includes("@");
+  // 区号选择器只在判断出「像手机号」（非空、非邮箱、以数字开头）时才展示，避免一进页面就打扰用户
+  const isPhoneLike = trimmedAccount.length > 0 && !isEmailLike && /^\d/.test(trimmedAccount);
   const countryOption = findCountry(country);
   const loginIdentifier = trimmedAccount && !isEmailLike ? `+${countryOption.dial}${trimmedAccount}` : trimmedAccount;
+
+  const emailAtIndex = account.indexOf("@");
+  const emailLocalPart = emailAtIndex >= 0 ? account.slice(0, emailAtIndex) : "";
+  const emailDomainQuery = emailAtIndex >= 0 ? account.slice(emailAtIndex + 1) : "";
+  const emailSuggestions =
+    accountFocused && emailAtIndex >= 0
+      ? EMAIL_DOMAINS.filter(
+          (domain) =>
+            domain.startsWith(emailDomainQuery.toLowerCase()) && domain !== emailDomainQuery.toLowerCase()
+        )
+      : [];
   // 注册固定走验证码方式，登录支持验证码/密码二选一
   const secondary = authTab === "register" || mode === "code" ? code.trim() : password.trim();
   const canSubmit = trimmedAccount.length > 0 && secondary.length > 0 && !pending;
@@ -175,8 +190,8 @@ export default function LoginPage() {
           <label className={`mb-2 block text-body font-semibold ${ink}`}>
             {t.settings.phoneOrEmail}
           </label>
-          <div className="flex gap-2">
-            {!isEmailLike && (
+          <div className="relative flex gap-2">
+            {isPhoneLike && (
               <button
                 type="button"
                 onClick={() => setShowCountryPicker(true)}
@@ -196,8 +211,34 @@ export default function LoginPage() {
               value={account}
               placeholder={t.settings.phoneOrEmailPlaceholder}
               onChange={(e) => setAccount(e.target.value)}
+              onFocus={() => setAccountFocused(true)}
+              onBlur={() => setAccountFocused(false)}
               className={`flex-1 h-12 px-3 rounded-button border text-task-title outline-none transition-shadow focus:border-game-primary focus:ring-[3px] focus:ring-game-focus-ring dark:focus:ring-game-focus-ring-dark placeholder:text-game-ink-disabled dark:placeholder:text-game-ink-disabled-dark ${fieldSurface}`}
             />
+
+            {emailSuggestions.length > 0 && (
+              <div
+                className={`absolute top-full left-0 right-0 z-20 mt-2 flex flex-wrap gap-2 rounded-button border p-2 shadow-warm dark:shadow-warm-dark ${fieldSurface}`}
+              >
+                {emailSuggestions.map((domain) => (
+                  <button
+                    key={domain}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setAccount(`${emailLocalPart}@${domain}`);
+                      setAccountFocused(false);
+                    }}
+                    className={`px-3 py-1.5 rounded-button text-body font-medium transition-colors ${
+                      isDark ? "bg-game-bg-muted-dark" : "bg-game-bg-muted"
+                    }`}
+                    style={{ color: GAME.primaryText }}
+                  >
+                    @{domain}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {authTab === "register" || mode === "code" ? (
