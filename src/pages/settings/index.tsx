@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
   ChevronRight, Shield, IdCard, Headset, ArrowLeftRight,
-  Settings as SettingsIcon,
+  Settings as SettingsIcon, MapPin, CreditCard,
 } from "lucide-react";
 import { useStore } from "@/stores";
 import { GAME } from "@/config/app.config";
@@ -78,6 +78,24 @@ export default function SettingsPage() {
       color: GAME.infoBlue,
       bg: isDark ? GAME.infoSoftDark : GAME.infoSoft,
       action: () => navigate("/security"),
+    },
+    {
+      key: "address",
+      label: "地址",
+      desc: "地址管理",
+      icon: MapPin,
+      color: GAME.success,
+      bg: isDark ? GAME.successSoftDark : GAME.successSoft,
+      action: () => toast({ title: "(Demo)地址管理", variant: "info" }),
+    },
+    {
+      key: "bank-card",
+      label: "银行卡",
+      desc: "银行卡管理",
+      icon: CreditCard,
+      color: GAME.rewardGold,
+      bg: isDark ? GAME.rewardGoldSoftDark : GAME.rewardGoldSoft,
+      action: () => toast({ title: "(Demo)银行卡管理", variant: "info" }),
     },
     {
       key: "support",
