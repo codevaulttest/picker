@@ -6,8 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getUserProfile, getSignInReward, SIGN_IN_REWARD_CAP_DAYS } from "@/lib/mockBackend";
 import { useStore } from "@/stores";
 import { useToast } from "@/hooks/use-toast";
-import { GAME, HOME_FEATURES, BRAND, getLevel, MINI_PROGRAMS, ASSETS } from "@/config/app.config";
-import GemFilled from "@/components/icons/GemFilled";
+import { GAME, HOME_FEATURES, BRAND, getLevel, MINI_PROGRAMS } from "@/config/app.config";
 import { useI18n } from "@/hooks/useI18n";
 import SignInDialog from "@/components/dialogs/SignInDialog";
 import RealNameDialog from "@/components/dialogs/RealNameDialog";
@@ -38,7 +37,6 @@ export default function HomePage() {
   const user = useStore((s) => s.user);
   const setUser = useStore((s) => s.setUser);
   const setAssets = useStore((s) => s.setAssets);
-  const assets = useStore((s) => s.assets);
   const isDark = useStore((s) => s.isDark);
   const setHideBottomNav = useStore((s) => s.setHideBottomNav);
   const { t } = useI18n();
@@ -239,11 +237,6 @@ export default function HomePage() {
     : "bg-game-bg-card shadow-warm";
   const ink = isDark ? "text-game-ink-dark" : "text-game-ink";
   const inkSec = isDark ? "text-game-ink-secondary-dark" : "text-game-ink-secondary";
-  const gems = ASSETS.filter((a) => a.group === "gem").map((item) => {
-    const raw = assets?.[item.key as keyof typeof assets];
-    const value = raw == null ? 0 : typeof raw === "number" ? raw : Number(raw) || 0;
-    return { ...item, value };
-  });
   const inkTer = isDark ? "text-game-ink-tertiary-dark" : "text-game-ink-tertiary";
   const inkDis = isDark ? "text-game-ink-disabled-dark" : "text-game-ink-disabled";
 
@@ -552,30 +545,12 @@ export default function HomePage() {
       <section className="mx-3.5 mt-2.5 flex-shrink-0">
         <button
           onClick={() => navigate("/wealth")}
-          className={`w-full flex flex-col gap-3 px-4 py-4 rounded-card transition-colors active:brightness-95 ${softCard}`}
+          className={`w-full flex items-center gap-2.5 px-4 py-5 rounded-card transition-colors active:brightness-95 ${softCard}`}
         >
-          <div className="w-full flex items-center gap-2.5">
-            <Wallet size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
-            <span className={`flex-1 text-left text-grid-label ${ink}`}>我的资产</span>
-            <span className={`text-body ${inkSec}`}>查看所有资产明细</span>
-            <ChevronRight size={16} style={{ color: GAME.primary }} />
-          </div>
-          <div
-            className="w-full grid grid-cols-3 gap-2 pt-3"
-            style={{ borderTop: `1px solid ${isDark ? GAME.dividerDark : GAME.divider}` }}
-          >
-            {gems.map((item) => (
-              <div key={item.key} className="flex flex-col items-center text-center min-w-0 gap-1">
-                <GemFilled size={18} style={{ color: item.color }} />
-                <span className={`text-hud-number tabular-nums truncate w-full ${ink}`}>
-                  {item.value.toLocaleString()}
-                </span>
-                <span className={`text-section-label uppercase truncate w-full ${inkSec}`}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          <Wallet size={18} className="flex-shrink-0" style={{ color: GAME.primary }} />
+          <span className={`flex-1 text-left text-grid-label ${ink}`}>我的资产</span>
+          <span className={`text-body ${inkSec}`}>查看所有资产明细</span>
+          <ChevronRight size={16} style={{ color: GAME.primary }} />
         </button>
       </section>
 
