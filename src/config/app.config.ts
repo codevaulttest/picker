@@ -11,6 +11,7 @@ import {
   Wine, IdCard,
   ClipboardList, Hourglass, Link2, type LucideIcon,
 } from "lucide-react";
+import tradingHallIllustration from "@/assets/illustrations/trading-hall.png";
 
 // Gamification accent palette — see DESIGN.md (Duolingo/Todoist/Strava blend,
 // pixel-calibrated against the homepage reference mockup). Kept separate
@@ -230,6 +231,7 @@ export const HOME_FEATURES: FeatureButtonConfig[] = [
   { key: "home-authcode", label: "认证码", subtitle: "认证得BV", image: "/icons/home-authcode.webp", path: "/auth-code" },
   { key: "home-upgrade", label: "升级码", subtitle: "兑换升级经验", image: "/icons/home-upgrade.webp", path: "/upgrade-code" },
   { key: "home-exchange", label: "BV互换", subtitle: "BV兑换好礼", image: "/icons/home-exchange.webp", path: "/code-market" },
+  { key: "home-trading-hall", label: "交易大厅", subtitle: "交易所", image: tradingHallIllustration, path: "/code-market" },
   { key: "home-mini-program", label: "小程序", subtitle: "发现更多服务", image: "/icons/home-mini-program.webp", path: "/mini-program" },
   { key: "home-early", label: "早起打卡", subtitle: "每日打卡得分", image: "/icons/home-early.webp", path: "/clock-in/early" },
   { key: "home-step", label: "计步打卡", subtitle: "走路赚BV", image: "/icons/home-step.webp", path: "/clock-in/step" },

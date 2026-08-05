@@ -72,7 +72,7 @@ export default function WealthPage() {
           <h1
             className={`pointer-events-none absolute inset-x-0 text-center text-section-title ${ink}`}
           >
-            我的财富
+            我的资产
           </h1>
         </div>
       </header>
